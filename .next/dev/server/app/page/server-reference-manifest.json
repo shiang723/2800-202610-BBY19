@@ -1,4 +1,17 @@
 {
-  "node": {},
+  "node": {
+    "0081b345d6c1a53024442c87deea72c2235e25fd4a": {
+      "workers": {
+        "app/page": {
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createClientForServerComponent",
+          "filename": "lib/supabase/server.ts"
+        }
+      },
+      "exportedName": "createClientForServerComponent",
+      "filename": "lib/supabase/server.ts"
+    }
+  },
   "edge": {}
 }
