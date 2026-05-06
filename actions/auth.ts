@@ -1,33 +1,31 @@
-"use server"
+import { createClientForClientComponent } from '@/lib/supabase/client'
 
-import { createClientForServerComponent } from '@/lib/supabase/client'
-
-const supabase = createClientForServerComponent();
+const supabase = await createClientForClientComponent();
 
 export async function signUpNewUser(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
     email,
     password,
-  })
+    })
 
-  if(error) {
+    if(error) {
     console.log("Signup error" + error.message)
     return;
-  }
+    }
 
-  return data;
+    return data;
 }
 
-export async function signInWithEmail() {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'valid.email@supabase.io',
-    password: 'example-password',
-  })
+export async function signInWithEmail(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    })
 
     if(error) {
     console.log("Signin error" + error.message)
     return;
-  }
+    }
 
-  return data;
+    return data;
 }
