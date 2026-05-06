@@ -3,7 +3,7 @@
     "0081b345d6c1a53024442c87deea72c2235e25fd4a": {
       "workers": {
         "app/page": {
-          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
           "exportedName": "createClientForServerComponent",
           "filename": "lib/supabase/server.ts"
@@ -11,6 +11,54 @@
       },
       "filename": "lib/supabase/server.ts",
       "exportedName": "createClientForServerComponent"
+    },
+    "00ed0d06f442511c4428feb7bae6b6d9fea577fd6d": {
+      "workers": {
+        "app/page": {
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "actions/auth.ts"
+        }
+      },
+      "filename": "actions/auth.ts",
+      "exportedName": "signOut"
+    },
+    "60e9d68a8e06024239b31854532fb1abc0af70a74c": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "signInWithEmail",
+          "filename": "actions/auth.ts"
+        },
+        "app/page": {
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "signInWithEmail",
+          "filename": "actions/auth.ts"
+        }
+      },
+      "filename": "actions/auth.ts",
+      "exportedName": "signInWithEmail"
+    },
+    "60f095ac75bb08f360791e82c17de2c5272068dae2": {
+      "workers": {
+        "app/page": {
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/lib/supabase/server.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "signUpNewUser",
+          "filename": "actions/auth.ts"
+        },
+        "app/signup/page": {
+          "moduleId": "[project]/.next-internal/server/app/signup/page/actions.js { ACTIONS_MODULE0 => \"[project]/actions/auth.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true,
+          "exportedName": "signUpNewUser",
+          "filename": "actions/auth.ts"
+        }
+      },
+      "filename": "actions/auth.ts",
+      "exportedName": "signUpNewUser"
     }
   },
   "edge": {},
