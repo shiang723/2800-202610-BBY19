@@ -3,6 +3,7 @@ import SearchBar from "@/components/SearchBar";
 import { Settings, Navigation } from "lucide-react";
 import { createClientForServerComponent } from "@/lib/supabase/server";
 import { signOut } from "@/actions/auth";
+import { WelcomeTutorial } from "@/components/WelcomeTutorial";
 
 export default async function Home() {
   const supabase = await createClientForServerComponent();
@@ -12,6 +13,7 @@ export default async function Home() {
   return (
     <main>
       <MapComponent />
+      <WelcomeTutorial open={true} />
 
       <div className="absolute top-0 left-0 right-0 z-10 p-4 flex flex-col gap-3">
         <SearchBar />

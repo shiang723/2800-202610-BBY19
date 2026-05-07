@@ -51,22 +51,22 @@ export default function TutorialModal({
     }
 
 
-    const backButtonClass = (first) ? " hidden" : "bg-gray-200 hover:bg-gray-300 text-black rounded-lg p-2 pl-4 pr-4 mt-5";
+    const backButtonClass = (first) ? " hidden" : "bg-gray-200 hover:bg-gray-300 text-black rounded-lg p-2 pl-4 pr-4";
     const nextButtonText = (last) ? "Done" : "Next";
-    const skipButtonClass = (last) ? "hidden" : "flex justify-self-end bg-gray-400 text-white rounded-lg p-1 pl-4 pr-4 mb-5 hover:bg-gray-500";
+    const skipButtonClass = (last) ? "hidden" : "flex justify-self-end bg-gray-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-gray-500";
 
     return (
         <div>
-            <dialog ref={currentModal} id={id} className="rounded-lg p-7 fixed place-self-center max-w-100 max-h-200 flex-auto">
+            <dialog ref={currentModal} id={id} className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto">
                 <button onClick={() => { currentModal.current?.close() }} className={skipButtonClass}>Skip</button>
                 <h2 className="text-center text-xl">{header}</h2>
                 <Image src={icon} alt="sun" width={Number(iconWidth)}
-                    height={Number(iconHeight)} className="place-self-center m-2" />
-                <p className="text-center m-2" >{message}</p>
+                    height={Number(iconHeight)} className="place-self-center mt-2 mb-2" />
+                <p className="text-center mt-2 mb-2" >{message}</p>
                 <p className="text-center text-sm mt-5">Step {currStep} of {numSteps}</p>
-                <div className="flex flex-row justify-end gap-x-50">
+                <div className="flex flex-row justify-between">
                     <button onClick={() => { handleBack() }} className={backButtonClass}>Back</button>
-                    <button onClick={() => { handleNext() }} className="bg-gray-500 hover:bg-gray-600 text-white rounded-lg p-2 pl-4 pr-4 mt-5" autoFocus={true}>{nextButtonText}</button>
+                    <button onClick={() => { handleNext() }} className="bg-gray-500 hover:bg-gray-600 text-white rounded-lg p-2 pl-4 pr-4 ml-auto" autoFocus={true}>{nextButtonText}</button>
                 </div>
             </dialog >
         </div >

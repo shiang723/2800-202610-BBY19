@@ -19,25 +19,38 @@ export function WelcomeTutorial({ open }: { open: boolean }) {
                 nextLocation="second-page"
                 first={true}
                 currStep="1"
-                numSteps="3" />
+                numSteps="4" />
             <TutorialModal
                 id="second-page"
                 header="Shade Map"
-                message="Thank you for signing up! Here is a short tutorial to help get you started!"
-                icon="/sun.svg"
-                nextLocation="last-page"
+                message="Here is our Home page. It shows a shade map of Vancouver."
+                icon="/HomeMap.png"
+                iconHeight="250"
+                iconWidth="260"
+                nextLocation="third-page"
                 lastLocation="first-page"
                 currStep="2"
-                numSteps="3" />
+                numSteps="4" />
+            <TutorialModal
+                id="third-page"
+                header="Shade Map Near Me"
+                message="Press the bottom right `Go to my location` button to show the shade map of you current location."
+                icon="/tutorialpg2.png"
+                iconHeight="250"
+                iconWidth="260"
+                nextLocation="last-page"
+                lastLocation="second-page"
+                currStep="3"
+                numSteps="4" />
             <TutorialModal
                 id="last-page"
                 header="You're All Set"
-                message="Thank you for signing up! Here is a short tutorial to help get you started!"
+                message="That is the end of the tutorial. Click the Done button to continue to the app."
                 icon="/sun.svg"
-                lastLocation="second-page"
+                lastLocation="third-page"
                 last={true}
-                currStep="3"
-                numSteps="3" />
+                currStep="4"
+                numSteps="4" />
         </div>
     );
 
