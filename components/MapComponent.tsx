@@ -5,18 +5,19 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 
+import parks from "@/data/parks.json";
 import communityCentres from "@/data/community-centres.json";
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
-  // { data: parks, color: '#38a269', id: 'parks' },
+  { data: parks, color: '#38a269', id: 'parks', icon: '/park.png', type: 'Park' },
+  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
   // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
-  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png' },
 ]
 
-function markerClick() {
-  console.log("Marker clicked!");
-}
+// function markerClick() {
+//   console.log("Marker clicked!");
+// }
 
 
 export default function MapComponent() {
@@ -130,13 +131,13 @@ export default function MapComponent() {
       // Loop through the data tables and add a layer of points for each dataset
       for (const dataSet of dataTables) {
 
-        const image = await map.loadImage(dataSet.icon); 
+        const image = await map.loadImage(dataSet.icon);
 
         map.addImage(dataSet.id, image.data);
 
 
 
-        
+
         map.addSource(dataSet.id, {
           'type': "geojson",
           'data': dataSet.data as GeoJSON.FeatureCollection,
@@ -146,15 +147,68 @@ export default function MapComponent() {
           'source': dataSet.id,
           'type': 'symbol',
           'layout': {
-              'icon-image': dataSet.id,
-              'icon-size': 0.05,
+            'icon-image': dataSet.id,
+            'icon-size': 0.05,
           }
         });
 
+        // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
 
-        
+        // When a click event occurs on a feature in the places layer, open a popup at the
+        // location of the feature, with description HTML from its properties.
+        map.on('click', dataSet.id, (e) => {
+          if (!e.features || !e.features[0]) return;
 
-          // Similar logic but as markers instead of circles. Pros and cons to each
+          const location = e.features[0];
+          const coordinates = (location.geometry as GeoJSON.Point).coordinates.slice();
+          const properties = location.properties;
+
+          let html = `
+            <p class="text-sm font-bold">${properties.name}</p>
+            <p class="text-xs">${dataSet.type}</p>
+          `;
+
+          if (dataSet.id === 'parks') {
+            html += `
+              <p class="text-xs">Washrooms: <b>${properties.washrooms}</b></p>
+              <p>
+                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+                  class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
+              </p>
+              <p>
+                <a href="https://covapp.vancouver.ca/parkfinder/parkdetail.aspx?inparkid=${properties.parkid}"
+                  class="text-xs text-blue-500" target="_blank">More info</a>
+              </p>
+            `;
+          } else if (dataSet.id === 'community-centres') {
+            html += `
+              <p class="text-xs">Washrooms: <b>Y</b></p>
+              <p>
+                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+                  class="text-xs text-blue-500" target="_blank">${properties.address}</a>
+              </p>
+              <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
+            `;
+          }
+
+          new maplibregl.Popup({ className: "text-left", maxWidth: "200px" })
+            .setLngLat(coordinates as [number, number])
+            .setHTML(html)
+            .addTo(map);
+        });
+
+        // Change the cursor to a pointer when the mouse is over the places layer.
+        map.on('mouseenter', dataSet.id, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+
+        // Change it back to a pointer when it leaves.
+        map.on('mouseleave', dataSet.id, () => {
+          map.getCanvas().style.cursor = '';
+        });
+
+
+        //// Similar logic but as markers instead of circles. Pros and cons to each
         // for (const location of dataSet.data.features) {
         //   let lng = location.geometry.coordinates[0];
         //   let lat = location.geometry.coordinates[1];
