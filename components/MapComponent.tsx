@@ -61,7 +61,7 @@ export default function MapComponent() {
             // return DEM tile url for given x,y,z coordinates
             return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
           },
-          getElevation: ({ r, g, b, a }) => {
+          getElevation: ({ r, g, b }) => {
             // return elevation in meters for a given DEM tile pixel
             return r * 256 + g + b / 256 - 32768;
           },
