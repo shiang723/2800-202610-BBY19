@@ -5,6 +5,20 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 
+import communityCentres from "@/data/community-centres.json";
+
+// Fill in when we have the data downloaded and imported like above
+const dataTables = [
+  // { data: parks, color: '#38a269', className: 'parks' },
+  // { data: waterFountain, color: '#0E87CC', className: 'water-fountains' },
+  { data: communityCentres, color: '#ff0000', className: 'community-centres' },
+]
+
+function markerClick() {
+  console.log("Marker clicked!");
+}
+
+
 export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
@@ -109,6 +123,46 @@ export default function MapComponent() {
         intensity: 0.4,
         position: [1, 210, 30],
       });
+
+
+
+
+      // Loop through the data tables and add a layer of points for each dataset
+      for (const dataSet of dataTables) {
+
+        map.addSource(dataSet.className, {
+          type: "geojson",
+          data: dataSet.data as GeoJSON.FeatureCollection,
+        });
+        map.addLayer({
+          id: dataSet.className,
+          type: "circle",
+          source: dataSet.className,
+          paint: {
+            "circle-radius": 6,
+            "circle-color": dataSet.color,
+          }
+        });
+
+
+          // Similar logic but as markers instead of circles. Pros and cons to each
+        // for (const location of dataSet.data) {
+        //   let lng = location.geom.geometry.coordinates[0];
+        //   let lat = location.geom.geometry.coordinates[1];
+        //   let marker = new maplibregl.Marker({
+        //     color: dataSet.color,
+        //     className: dataSet.className,
+        //     scale: 0.75,
+        //   })
+        //     .setLngLat([lng, lat])
+        //     .addTo(map);
+
+        //   marker.on("click", markerClick);
+        // }
+      }
+      
+
+
     });
 
     return () => {
