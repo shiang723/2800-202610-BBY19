@@ -9,9 +9,9 @@ import communityCentres from "@/data/community-centres.json";
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
-  // { data: parks, color: '#38a269', className: 'parks' },
-  // { data: waterFountain, color: '#0E87CC', className: 'water-fountains' },
-  { data: communityCentres, color: '#ff0000', className: 'community-centres' },
+  // { data: parks, color: '#38a269', id: 'parks' },
+  // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
+  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png' },
 ]
 
 function markerClick() {
@@ -39,7 +39,7 @@ export default function MapComponent() {
 
     const map = mapInstance.current;
 
-    map.on("load", () => {
+    map.on("load", async () => {
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
@@ -130,25 +130,34 @@ export default function MapComponent() {
       // Loop through the data tables and add a layer of points for each dataset
       for (const dataSet of dataTables) {
 
-        map.addSource(dataSet.className, {
-          type: "geojson",
-          data: dataSet.data as GeoJSON.FeatureCollection,
+        const image = await map.loadImage(dataSet.icon); 
+
+        map.addImage(dataSet.id, image.data);
+
+
+
+        
+        map.addSource(dataSet.id, {
+          'type': "geojson",
+          'data': dataSet.data as GeoJSON.FeatureCollection,
         });
         map.addLayer({
-          id: dataSet.className,
-          type: "circle",
-          source: dataSet.className,
-          paint: {
-            "circle-radius": 6,
-            "circle-color": dataSet.color,
+          'id': dataSet.id,
+          'source': dataSet.id,
+          'type': 'symbol',
+          'layout': {
+              'icon-image': dataSet.id,
+              'icon-size': 0.05,
           }
         });
 
 
+        
+
           // Similar logic but as markers instead of circles. Pros and cons to each
-        // for (const location of dataSet.data) {
-        //   let lng = location.geom.geometry.coordinates[0];
-        //   let lat = location.geom.geometry.coordinates[1];
+        // for (const location of dataSet.data.features) {
+        //   let lng = location.geometry.coordinates[0];
+        //   let lat = location.geometry.coordinates[1];
         //   let marker = new maplibregl.Marker({
         //     color: dataSet.color,
         //     className: dataSet.className,
@@ -159,8 +168,10 @@ export default function MapComponent() {
 
         //   marker.on("click", markerClick);
         // }
+
+
       }
-      
+
 
 
     });
