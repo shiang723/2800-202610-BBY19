@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@turf/turf": "^7.3.5",
+    "lucide-react": "^1.14.0",
     "mapbox-gl-shadow-simulator": "^0.68.2",
     "maplibre-gl": "^5.24.0",
     "next": "16.2.4",

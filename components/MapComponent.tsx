@@ -3,62 +3,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import SunCalc from "suncalc";
-import * as turf from "@turf/turf";
-
-const SHADOW_SOURCE = "building-shadows";
-const SHADOW_LAYER = "building-shadow-layer";
-
-function getSunOffset(date: Date, lat: number, lng: number) {
-  const { altitude, azimuth } = SunCalc.getPosition(date, lat, lng);
-  if (altitude < 0.05) return null;
-
-  const SHADOW_SCALE = 1.8;
-  const shadowLen = Math.min(1 / Math.tan(altitude), 50) * SHADOW_SCALE;
-
-  const dEastMeters = Math.sin(azimuth) * shadowLen;
-  const dNorthMeters = Math.cos(azimuth) * shadowLen;
-
-  const mPerDegLat = 111_320;
-  const mPerDegLng = 111_320 * Math.cos((lat * Math.PI) / 180);
-
-  return {
-    dLng: dEastMeters / mPerDegLng,
-    dLat: dNorthMeters / mPerDegLat,
-  };
-}
-
-function buildShadowGeoJSON(
-  map: maplibregl.Map,
-  offset: { dLng: number; dLat: number },
-): GeoJSON.FeatureCollection {
-  const features = map.queryRenderedFeatures(undefined, {
-    layers: ["3d-buildings"],
-  });
-
-  const shadows: GeoJSON.Feature[] = [];
-
-  for (const f of features) {
-    const height = (f.properties?.render_height as number) ?? 10;
-    const geom = f.geometry;
-    if (geom.type !== "Polygon") continue;
-
-    const dLng = offset.dLng * height;
-    const dLat = offset.dLat * height;
-
-    try {
-      const footprint = turf.polygon(geom.coordinates);
-      const projected = turf.polygon(
-        geom.coordinates.map((ring) =>
-          ring.map(([lng, lat]) => [lng + dLng, lat + dLat]),
-        ),
-      );
-      const shadow = turf.union(turf.featureCollection([footprint, projected]));
-      if (shadow) shadows.push(shadow as GeoJSON.Feature);
-    } catch {}
-  }
-  return { type: "FeatureCollection", features: shadows };
-}
+import ShadeMap from "mapbox-gl-shadow-simulator";
 
 export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -68,7 +13,7 @@ export default function MapComponent() {
     if (mapInstance.current || !mapContainer.current) return;
 
     const testDate = new Date();
-    testDate.setHours(8, 0, 0, 0);
+    testDate.setHours(6, 0, 0, 0);
 
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -80,21 +25,59 @@ export default function MapComponent() {
 
     const map = mapInstance.current;
 
-    const refreshShadows = () => {
-      const { lat, lng } = map.getCenter();
-      const offset = getSunOffset(testDate, lat, lng);
-      if (!offset) return;
-
-      const src = map.getSource(SHADOW_SOURCE) as
-        | maplibregl.GeoJSONSource
-        | undefined;
-      src?.setData(buildShadowGeoJSON(map, offset));
-    };
-
     map.on("load", () => {
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+
+          // Blue dot marker for user location
+          const el = document.createElement("div");
+          el.className =
+            "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+
+          new maplibregl.Marker({ element: el })
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          // Center map on user
+          map.flyTo({ center: [longitude, latitude], zoom: 15 });
+        },
+        (err) => console.error("Location error:", err),
+        { enableHighAccuracy: true },
+      );
+
+      new ShadeMap({
+        date: testDate, // display shadows for current date
+        color: "#01112f", // shade color
+        opacity: 0.7, // opacity of shade color
+        apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
+        terrainSource: {
+          tileSize: 256, // DEM tile size
+          maxZoom: 15, // Maximum zoom of DEM tile set
+          getSourceUrl: ({ x, y, z }) => {
+            // return DEM tile url for given x,y,z coordinates
+            return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+          },
+          getElevation: ({ r, g, b, a }) => {
+            // return elevation in meters for a given DEM tile pixel
+            return r * 256 + g + b / 256 - 32768;
+          },
+        },
+        debug: (msg) => {
+          console.log(new Date().toISOString(), msg);
+        },
+      }).addTo(map);
+
+      // advance shade by 1 hour
+      // shadeMap.setDate(new Date(Date.now() + 1000 * 60 * 60));
+
+      // sometime later
+      // ...remove layer
+      // shadeMap.remove();
+
       for (const layer of styleLayers) {
         if (layer.type === "symbol") {
           map.removeLayer(layer.id);
@@ -120,33 +103,12 @@ export default function MapComponent() {
         },
       });
 
-      map.addSource(SHADOW_SOURCE, {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-
-      map.addLayer({
-        id: SHADOW_LAYER,
-        type: "fill-extrusion",
-        source: SHADOW_SOURCE,
-        paint: {
-          "fill-extrusion-color": "#1a1a2e",
-          "fill-extrusion-height": 0.5,
-          "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.55,
-        },
-      });
-
       map.setLight({
         anchor: "map",
         color: "#fff8e7",
         intensity: 0.4,
         position: [1, 210, 30],
       });
-
-      map.on("idle", refreshShadows);
-      map.on("moveend", refreshShadows);
-      refreshShadows();
     });
 
     return () => {
