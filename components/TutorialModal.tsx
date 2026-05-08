@@ -41,7 +41,6 @@ export default function TutorialModal({
             const nextModal = document.getElementById(nextLocation) as HTMLDialogElement | null;
             nextModal?.showModal();
         }
-
     }
 
     function handleBack() {

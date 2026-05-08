@@ -19,38 +19,49 @@ export function WelcomeTutorial({ open }: { open: boolean }) {
                 nextLocation="second-page"
                 first={true}
                 currStep="1"
-                numSteps="4" />
+                numSteps="5" />
             <TutorialModal
                 id="second-page"
-                header="Shade Map"
-                message="Here is our Home page. It shows a shade map of Vancouver."
-                icon="/HomeMap.png"
+                header="Turn Tutorials Off"
+                message="To turn off these tutorials, navigate to the Settings menu and toggle off tutorials."
+                icon="/tutorialMenu.png"
                 iconHeight="250"
                 iconWidth="260"
                 nextLocation="third-page"
                 lastLocation="first-page"
                 currStep="2"
-                numSteps="4" />
+                numSteps="5" />
             <TutorialModal
                 id="third-page"
+                header="Shade Map"
+                message="Here is our Home page. It shows a shade map of Vancouver."
+                icon="/HomeMap.png"
+                iconHeight="250"
+                iconWidth="260"
+                nextLocation="fourth-page"
+                lastLocation="second-page"
+                currStep="3"
+                numSteps="5" />
+            <TutorialModal
+                id="fourth-page"
                 header="Shade Map Near Me"
                 message="Press the bottom right `Go to my location` button to show the shade map of you current location."
                 icon="/tutorialpg2.png"
                 iconHeight="250"
                 iconWidth="260"
                 nextLocation="last-page"
-                lastLocation="second-page"
-                currStep="3"
-                numSteps="4" />
+                lastLocation="third-page"
+                currStep="4"
+                numSteps="5" />
             <TutorialModal
                 id="last-page"
                 header="You're All Set"
                 message="That is the end of the tutorial. Click the Done button to continue to the app."
                 icon="/sun.svg"
-                lastLocation="third-page"
+                lastLocation="fourth-page"
                 last={true}
-                currStep="4"
-                numSteps="4" />
+                currStep="5"
+                numSteps="5" />
         </div>
     );
 
