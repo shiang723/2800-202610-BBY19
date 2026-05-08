@@ -1,33 +1,13 @@
 'use client'
+
 import MapComponent from "@/components/MapComponent";
 import SearchBar from "@/components/SearchBar";
 import { Settings, Navigation } from "lucide-react";
 import { signOut } from "@/actions/auth";
-import { WelcomeTutorial } from "@/components/WelcomeTutorial";
-import { useState } from "react";
-import Setting from "@/components/Settings";
 import Navbar from "./Navbar";
 
 
-const getInitialTutorial = () => {
-    if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("tutorial_enabled");
-        if (saved !== null) {
-            return saved === "true";
-        }
-    }
-    return true;
-};
-
 export default function HomeContainer({ userEmail }: { userEmail?: string }) {
-
-    const [tutorial, setTutorial] = useState(getInitialTutorial);
-
-
-    const handleUpdateTutorial = (newValue: boolean) => {
-        setTutorial(newValue);
-        localStorage.setItem("tutorial_enabled", newValue.toString());
-    };
 
     function handleSettingMenu() {
         const settingMenu = document.getElementById("settings-menu") as HTMLDialogElement | null;
@@ -37,8 +17,6 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
     return (
         <main>
             <MapComponent />
-            {tutorial && <WelcomeTutorial open={tutorial} />}
-            <Setting tutorialOn={tutorial} setTutorialOn={handleUpdateTutorial} />
             <div className="absolute top-0 left-0 right-0 z-10 p-4 flex flex-col gap-3">
                 <SearchBar />
                 <div className="flex gap-2">
