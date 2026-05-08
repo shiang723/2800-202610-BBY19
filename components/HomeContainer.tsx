@@ -6,6 +6,7 @@ import { signOut } from "@/actions/auth";
 import { WelcomeTutorial } from "@/components/WelcomeTutorial";
 import { useState } from "react";
 import Setting from "@/components/Settings";
+import Navbar from "./Navbar";
 
 
 const getInitialTutorial = () => {
@@ -81,6 +82,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                     Logout
                 </button>
             </div>
+            <Navbar />
         </main >
     );
 }
