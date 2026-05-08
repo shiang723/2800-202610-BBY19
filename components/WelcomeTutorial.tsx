@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from "react";
 import TutorialModal from "./TutorialModal";
-export function WelcomeTutorial({ open }: { open: boolean }) {
+export default function WelcomeTutorial({ open }: { open: boolean }) {
 
     useEffect(() => {
         if (open) {
