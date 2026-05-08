@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
@@ -29,12 +29,25 @@ export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
+  const dateInstance = useRef<Date>(new Date());
+
+  // const [displayTime, setDisplayTime] = useState("");
+  // setDisplayTime(dateInstance.current.toLocaleTimeString());
+
+  const changeTime = (hours: number) => {
+    if (!shadeInstance.current) return;
+
+    const tempDate = new Date(dateInstance.current);
+    tempDate.setHours(tempDate.getHours() + hours);
+    dateInstance.current = tempDate;
+    shadeInstance.current.setDate(tempDate);
+
+    // setDisplayTime(tempDate.toLocaleTimeString());
+  }
+
 
   useEffect(() => {
     if (mapInstance.current || !mapContainer.current) return;
-
-    const testDate = new Date();
-    testDate.setHours(6, 0, 0, 0);
 
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -54,7 +67,7 @@ export default function MapComponent() {
         reverseActive: false,
         limit: 8,
         reverseGeocodingLimit: 1,
-        proximity: [{ type: "map-center"}],
+        proximity: [{ type: "map-center" }],
         types: ["poi", "address"],
         bbox: bbox,
         showPlaceType: "never",
@@ -109,7 +122,7 @@ export default function MapComponent() {
       );
 
       shadeInstance.current = new ShadeMap({
-        date: testDate, // display shadows for current date
+        date: dateInstance.current, // display shadows for current date
         color: "#01112f", // shade color
         opacity: 0.7, // opacity of shade color
         apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
@@ -282,9 +295,23 @@ export default function MapComponent() {
   }, []);
 
   return (
-    <div
-      ref={mapContainer}
-      className="h-screen w-full bg-zinc-200 dark:bg-zinc-800"
-    />
+    <div>
+      <div
+        ref={mapContainer}
+        className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
+      />
+      <div className="fixed bottom-18 left-0 right-0 flex justify-center bg-opacity-50 rounded">
+        <div className="flex justify-center">
+          <button onClick={() => changeTime(-1)} className="mx-1 px-3 py-1 bg-white text-black rounded">-1h</button>
+          {/* <div className="mx-1 px-2 py-1 bg-white text-black rounded">{dateInstance.current.toLocaleTimeString()}</div> */}
+          <button onClick={() => changeTime(1)} className="mx-1 px-3 py-1 bg-white text-black rounded">+1h</button>
+        </div>
+      </div>
+
+    </div>
+
+
+
+
   );
 }
