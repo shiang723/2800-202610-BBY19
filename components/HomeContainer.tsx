@@ -1,6 +1,7 @@
 import MapComponent from "@/components/MapComponent";
 import SearchBar from "@/components/SearchBar";
 import { signOut } from "@/actions/auth";
+import SignoutBtn from "./SignoutBtn";
 import Navbar from "./Navbar";
 import NavigationButton from "./NavigationButton";
 import SettingMenu from "./SettingMenu";
@@ -31,16 +32,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                         ? "User is authenticated. User email: " + userEmail
                         : "User is not authenticated."}
                 </p>
-                <button
-                    onClick={signOut}
-                    className={
-                        userEmail
-                            ? "p-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors"
-                            : "hidden"
-                    }
-                >
-                    Logout
-                </button>
+                <SignoutBtn userEmail={userEmail}/>
             </div>
             <Navbar />
         </main >
