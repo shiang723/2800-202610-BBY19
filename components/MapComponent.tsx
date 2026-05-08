@@ -4,9 +4,12 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
+import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
 
 import parks from "@/data/parks.json";
 import communityCentres from "@/data/community-centres.json";
+
+const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
@@ -14,6 +17,8 @@ const dataTables = [
   { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
   // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
 ]
+
+const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box, thx copilot
 
 // function markerClick() {
 //   console.log("Marker clicked!");
@@ -32,7 +37,7 @@ export default function MapComponent() {
 
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: `https://api.maptiler.com/maps/streets-v4/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`, //3D style nowww
+      style: `https://api.maptiler.com/maps/streets-v4/style.json?key=${maptilerApiKey}`, //3D style nowww
       center: [-123.1207, 49.2827], // Vancouver Coordinates
       zoom: 15,
       pitch: 45,
@@ -41,6 +46,41 @@ export default function MapComponent() {
     const map = mapInstance.current;
 
     map.on("load", async () => {
+
+      const geocoder = new GeocodingControl({
+        apiKey: maptilerApiKey,
+        country: "ca",
+        proximity: [{ type: "map-center"}],
+        types: ["poi"],
+        bbox: bbox,
+        showPlaceType: "never",
+        placeholder: "Search for places in Vancouver",
+      });
+
+      document.getElementById("geocoderContainer")?.appendChild(geocoder.onAdd(map));
+
+      const searchBarStyle = document.createElement("style");
+      searchBarStyle.innerHTML = `
+        .input-group {
+          flex-direction: row-reverse !important;
+        }
+        form {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      `;
+
+      const searchDropdownStyle = document.createElement("style");
+      searchDropdownStyle.innerHTML = `
+        .line2 {
+          font-size: 10px !important;
+        }
+      `;
+
+      document.querySelector("maptiler-geocoder")?.shadowRoot?.appendChild(searchBarStyle);
+      document.querySelector("maptiler-geocoder-feature-item")?.shadowRoot?.appendChild(searchDropdownStyle);
+
+
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
@@ -191,7 +231,7 @@ export default function MapComponent() {
             `;
           }
 
-          new maplibregl.Popup({ className: "text-left", maxWidth: "200px" })
+          new maplibregl.Popup()
             .setLngLat(coordinates as [number, number])
             .setHTML(html)
             .addTo(map);
