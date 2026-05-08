@@ -1,10 +1,10 @@
 import MapComponent from "@/components/MapComponent";
 import SearchBar from "@/components/SearchBar";
-import { signOut } from "@/actions/auth";
 import SignoutBtn from "./SignoutBtn";
 import Navbar from "./Navbar";
 import NavigationButton from "./NavigationButton";
 import SettingMenu from "./SettingMenu";
+import MapFilterBtn from "./MapFilterBtn";
 
 export default function HomeContainer({ userEmail }: { userEmail?: string }) {
     return (
@@ -14,12 +14,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                 <SearchBar />
                 <div className="flex gap-2">
                     {["Parks", "Water", "Shade"].map((label) => (
-                        <button
-                            key={label}
-                            className="px-4 py-1.5 bg-white rounded-full text-sm font-medium shadow-md text-zinc-950 hover:bg-gray-200"
-                        >
-                            {label}
-                        </button>
+                        <MapFilterBtn label={label}/>
                     ))}
                 </div>
             </div>
