@@ -1,19 +1,12 @@
-'use client'
-
 import MapComponent from "@/components/MapComponent";
 import SearchBar from "@/components/SearchBar";
-import { Settings, Navigation } from "lucide-react";
 import { signOut } from "@/actions/auth";
 import Navbar from "./Navbar";
+import NavigationButton from "./NavigationButton";
+import SettingMenu from "./SettingMenu";
 
 
 export default function HomeContainer({ userEmail }: { userEmail?: string }) {
-
-    function handleSettingMenu() {
-        const settingMenu = document.getElementById("settings-menu") as HTMLDialogElement | null;
-        settingMenu?.showModal();
-    }
-
     return (
         <main>
             <MapComponent />
@@ -30,18 +23,8 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                     ))}
                 </div>
             </div>
-
-            <div className="absolute bottom-24 left-4 z-10">
-                <button onClick={() => { handleSettingMenu() }} className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-200">
-                    <Settings size={20} className="text-zinc-950" />
-                </button>
-
-            </div>
-            <div className="absolute bottom-24 right-4 z-10">
-                <button className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-200">
-                    <Navigation size={20} className="text-zinc-950" />
-                </button>
-            </div>
+            <SettingMenu/>
+            <NavigationButton/>
             <div>
                 <p>
                     Status:{" "}

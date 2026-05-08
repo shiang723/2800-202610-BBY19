@@ -9,7 +9,7 @@ export default async function Home() {
 
   return (
     <WelcomeTutorialComponent>
-    <HomeContainer userEmail={user?.email} />
+      <HomeContainer userEmail={user?.email} />
     </WelcomeTutorialComponent>
   );
 }

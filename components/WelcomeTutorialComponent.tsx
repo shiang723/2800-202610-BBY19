@@ -1,7 +1,7 @@
 'use client'
 import WelcomeTutorial from "./WelcomeTutorial";
 import Setting from "./Settings";
-import { Children, useState } from "react";
+import { useState } from "react";
 
 
 export default function WelcomeTutorialComponent({children} : {children: Readonly<React.ReactNode>}) {
@@ -30,6 +30,4 @@ export default function WelcomeTutorialComponent({children} : {children: Readonl
             <div>{children}</div>
         </div>
     );
-
-
 }
