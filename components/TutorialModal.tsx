@@ -1,73 +1,112 @@
-'use client'
+"use client";
 
 import Image from "next/image";
 import { useRef } from "react";
 
 interface TutorialModalProps {
-    id: string;
-    header: string;
-    icon: string;
-    iconHeight?: string;
-    iconWidth?: string;
-    nextLocation?: string;
-    message: string;
-    lastLocation?: string;
-    currStep?: string;
-    numSteps?: string;
-    first?: boolean;
-    last?: boolean;
+  id: string;
+  header: string;
+  icon: string;
+  iconHeight?: string;
+  iconWidth?: string;
+  nextLocation?: string;
+  message: string;
+  lastLocation?: string;
+  currStep?: string;
+  numSteps?: string;
+  first?: boolean;
+  last?: boolean;
 }
 
 export default function TutorialModal({
-    id,
-    header,
-    icon,
-    iconHeight = "40",
-    iconWidth = "40",
-    nextLocation = "",
-    lastLocation = "",
-    message,
-    currStep = "1",
-    numSteps = "1",
-    first = false,
-    last = false,
+  id,
+  header,
+  icon,
+  iconHeight = "40",
+  iconWidth = "40",
+  nextLocation = "",
+  lastLocation = "",
+  message,
+  currStep = "1",
+  numSteps = "1",
+  first = false,
+  last = false,
 }: TutorialModalProps) {
+  const currentModal = useRef<HTMLDialogElement>(null);
 
-    const currentModal = useRef<HTMLDialogElement>(null);
-
-    function handleNext() {
-        currentModal.current?.close();
-        if (!last) {
-            const nextModal = document.getElementById(nextLocation) as HTMLDialogElement | null;
-            nextModal?.showModal();
-        }
+  function handleNext() {
+    currentModal.current?.close();
+    if (!last) {
+      const nextModal = document.getElementById(
+        nextLocation,
+      ) as HTMLDialogElement | null;
+      nextModal?.showModal();
     }
+  }
 
-    function handleBack() {
-        currentModal.current?.close();
-        const lastModal = document.getElementById(lastLocation) as HTMLDialogElement | null;
-        lastModal?.showModal();
-    }
+  function handleBack() {
+    currentModal.current?.close();
+    const lastModal = document.getElementById(
+      lastLocation,
+    ) as HTMLDialogElement | null;
+    lastModal?.showModal();
+  }
 
+  const backButtonClass = first
+    ? " hidden"
+    : "bg-blue-200 hover:bg-blue-300 text-black rounded-lg p-2 pl-4 pr-4";
+  const nextButtonText = last ? "Done" : "Next";
+  const skipButtonClass = last
+    ? "hidden"
+    : "flex justify-self-end bg-blue-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-blue-500";
 
-    const backButtonClass = (first) ? " hidden" : "bg-gray-200 hover:bg-gray-300 text-black rounded-lg p-2 pl-4 pr-4";
-    const nextButtonText = (last) ? "Done" : "Next";
-    const skipButtonClass = (last) ? "hidden" : "flex justify-self-end bg-gray-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-gray-500";
-
-    return (
-        <div>
-            <dialog ref={currentModal} id={id} className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto">
-                <button onClick={() => { currentModal.current?.close() }} className={skipButtonClass}>Skip</button>
-                <h2 className="text-center text-xl">{header}</h2>
-                <Image src={icon} alt="sun" width={Number(iconWidth)}
-                    height={Number(iconHeight)} className="place-self-center mt-2 mb-2" />
-                <p className="text-center mt-2 mb-2" >{message}</p>
-                <p className="text-center text-sm mt-5">Step {currStep} of {numSteps}</p>
-                <div className="flex flex-row justify-between">
-                    <button onClick={() => { handleBack() }} className={backButtonClass}>Back</button>
-                    <button onClick={() => { handleNext() }} className="bg-gray-500 hover:bg-gray-600 text-white rounded-lg p-2 pl-4 pr-4 ml-auto" autoFocus={true}>{nextButtonText}</button>
-                </div>
-            </dialog >
-        </div >
-    );
+  return (
+    <div>
+      <dialog
+        ref={currentModal}
+        id={id}
+        className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto"
+      >
+        <button
+          onClick={() => {
+            currentModal.current?.close();
+          }}
+          className={skipButtonClass}
+        >
+          Skip
+        </button>
+        <h2 className="text-center text-xl">{header}</h2>
+        <Image
+          src={icon}
+          alt="sun"
+          width={Number(iconWidth)}
+          height={Number(iconHeight)}
+          className="place-self-center mt-2 mb-2"
+        />
+        <p className="text-center mt-2 mb-2">{message}</p>
+        <p className="text-center text-sm mt-5">
+          Step {currStep} of {numSteps}
+        </p>
+        <div className="flex flex-row justify-between">
+          <button
+            onClick={() => {
+              handleBack();
+            }}
+            className={backButtonClass}
+          >
+            Back
+          </button>
+          <button
+            onClick={() => {
+              handleNext();
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2 pl-4 pr-4 ml-auto"
+            autoFocus={true}
+          >
+            {nextButtonText}
+          </button>
+        </div>
+      </dialog>
+    </div>
+  );
 }
