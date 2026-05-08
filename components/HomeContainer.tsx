@@ -25,15 +25,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
             </div>
             <SettingMenu/>
             <NavigationButton/>
-            <div>
-                <p>
-                    Status:{" "}
-                    {userEmail
-                        ? "User is authenticated. User email: " + userEmail
-                        : "User is not authenticated."}
-                </p>
-                <SignoutBtn userEmail={userEmail}/>
-            </div>
+            <SignoutBtn userEmail={userEmail}/>
             <Navbar />
         </main >
     );
