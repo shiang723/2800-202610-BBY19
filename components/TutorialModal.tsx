@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRef } from "react";
 
+//Props for the Tutorial Modal
 interface TutorialModalProps {
     id: string;
     header: string;
@@ -18,6 +19,7 @@ interface TutorialModalProps {
     last?: boolean;
 }
 
+//Tutorial Modal used for Welcome Tutorial
 export default function TutorialModal({
     id,
     header,
@@ -33,8 +35,10 @@ export default function TutorialModal({
     last = false,
 }: TutorialModalProps) {
 
+    // Create a reference for the current modal
     const currentModal = useRef<HTMLDialogElement>(null);
 
+    // Handler for the Next or Done button on Click action.
     function handleNext() {
         currentModal.current?.close();
         if (!last) {
@@ -43,6 +47,7 @@ export default function TutorialModal({
         }
     }
 
+    // Handler for the Back button on Click action.
     function handleBack() {
         currentModal.current?.close();
         const lastModal = document.getElementById(lastLocation) as HTMLDialogElement | null;
@@ -54,6 +59,7 @@ export default function TutorialModal({
     const nextButtonText = (last) ? "Done" : "Next";
     const skipButtonClass = (last) ? "hidden" : "flex justify-self-end bg-gray-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-gray-500";
 
+    // The HTML layout and elements of the Tutorial Modal.
     return (
         <div>
             <dialog ref={currentModal} id={id} className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto">

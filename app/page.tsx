@@ -4,6 +4,7 @@ import { Settings, Navigation } from "lucide-react";
 import { createClientForServerComponent } from "@/lib/supabase/server";
 import { signOut } from "@/actions/auth";
 import { WelcomeTutorial } from "@/components/WelcomeTutorial";
+import Navbar from "@/components/Navbar";
 
 export default async function Home() {
   const supabase = await createClientForServerComponent();
@@ -39,6 +40,7 @@ export default async function Home() {
           <Navigation size={20} className="text-zinc-950" />
         </button>
       </div>
+
       <div>
         <p>
           Status:{" "}
@@ -57,6 +59,7 @@ export default async function Home() {
           Logout
         </button>
       </div>
+      <Navbar />
     </main>
   );
 }
