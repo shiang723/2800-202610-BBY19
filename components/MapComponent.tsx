@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
@@ -18,7 +18,7 @@ const dataTables = [
   // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
 ]
 
-const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box, thx copilot
+const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
 
 // function markerClick() {
 //   console.log("Marker clicked!");
@@ -29,12 +29,42 @@ export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
+  const dateInstance = useRef<Date>(new Date());
+
+  const [displayTime, setDisplayTime] = useState("");
+
+  const changeTime = (hours: number) => {
+    if (!shadeInstance.current) return;
+
+    const tempDate = new Date(dateInstance.current);
+    tempDate.setHours(tempDate.getHours() + hours);
+    dateInstance.current = tempDate;
+    shadeInstance.current.setDate(tempDate);
+
+    setDisplayTime(tempDate.toLocaleTimeString());
+  }
+
+  // Adapted from chatgpt
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newDate = new Date(dateInstance.current);
+
+      newDate.setSeconds(newDate.getSeconds() + 1);
+
+      dateInstance.current = newDate;
+      shadeInstance.current?.setDate(newDate);
+
+      setDisplayTime(
+        newDate.toLocaleTimeString()
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   useEffect(() => {
     if (mapInstance.current || !mapContainer.current) return;
-
-    const testDate = new Date();
-    testDate.setHours(6, 0, 0, 0);
 
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -52,9 +82,9 @@ export default function MapComponent() {
         apiKey: maptilerApiKey,
         country: "ca",
         reverseActive: false,
-        limit: 8,
+        limit: 5,
         reverseGeocodingLimit: 1,
-        proximity: [{ type: "map-center"}],
+        proximity: [{ type: "map-center" }],
         types: ["poi", "address"],
         bbox: bbox,
         showPlaceType: "never",
@@ -109,7 +139,7 @@ export default function MapComponent() {
       );
 
       shadeInstance.current = new ShadeMap({
-        date: testDate, // display shadows for current date
+        date: dateInstance.current, // display shadows for current date
         color: "#01112f", // shade color
         opacity: 0.7, // opacity of shade color
         apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
@@ -130,9 +160,7 @@ export default function MapComponent() {
         },
       }).addTo(map);
 
-
-      // advance shade by 1 hour
-      // shadeMap.setDate(new Date(Date.now() + 1000 * 60 * 60));
+      setDisplayTime(dateInstance.current.toLocaleTimeString());
 
       for (const layer of styleLayers) {
         if (layer.type === "symbol") {
@@ -249,7 +277,7 @@ export default function MapComponent() {
         });
 
 
-        //// Similar logic but as markers instead of circles. Pros and cons to each
+        // --Marker logic, leaving for later use
         // for (const location of dataSet.data.features) {
         //   let lng = location.geometry.coordinates[0];
         //   let lat = location.geometry.coordinates[1];
@@ -282,9 +310,23 @@ export default function MapComponent() {
   }, []);
 
   return (
-    <div
-      ref={mapContainer}
-      className="h-screen w-full bg-zinc-200 dark:bg-zinc-800"
-    />
+    <div>
+      <div
+        ref={mapContainer}
+        className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
+      />
+      <div className="fixed bottom-25 left-0 right-0 flex justify-center bg-opacity-50 rounded">
+        <div className="flex justify-center">
+          <button onClick={() => changeTime(-1)} className="mx-1 px-3 py-1 bg-white text-black rounded">-1h</button>
+          <div className="mx-1 px-2 py-1 bg-white text-black rounded">{displayTime}</div>
+          <button onClick={() => changeTime(1)} className="mx-1 px-3 py-1 bg-white text-black rounded">+1h</button>
+        </div>
+      </div>
+
+    </div>
+
+
+
+
   );
 }
