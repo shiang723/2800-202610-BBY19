@@ -50,8 +50,11 @@ export default function MapComponent() {
       const geocoder = new GeocodingControl({
         apiKey: maptilerApiKey,
         country: "ca",
+        reverseActive: false,
+        limit: 8,
+        reverseGeocodingLimit: 1,
         proximity: [{ type: "map-center"}],
-        types: ["poi"],
+        types: ["poi", "address"],
         bbox: bbox,
         showPlaceType: "never",
         placeholder: "Search for places in Vancouver",
