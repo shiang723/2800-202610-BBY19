@@ -28,6 +28,7 @@ const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789
 export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
+  const shadeInstance = useRef<ShadeMap | null>(null);
 
   useEffect(() => {
     if (mapInstance.current || !mapContainer.current) return;
@@ -107,7 +108,7 @@ export default function MapComponent() {
         { enableHighAccuracy: true },
       );
 
-      new ShadeMap({
+      shadeInstance.current = new ShadeMap({
         date: testDate, // display shadows for current date
         color: "#01112f", // shade color
         opacity: 0.7, // opacity of shade color
@@ -129,12 +130,9 @@ export default function MapComponent() {
         },
       }).addTo(map);
 
+
       // advance shade by 1 hour
       // shadeMap.setDate(new Date(Date.now() + 1000 * 60 * 60));
-
-      // sometime later
-      // ...remove layer
-      // shadeMap.remove();
 
       for (const layer of styleLayers) {
         if (layer.type === "symbol") {
@@ -274,7 +272,11 @@ export default function MapComponent() {
     });
 
     return () => {
-      map.remove();
+      // --Tried to fix the bug with the shade map not being removed, still needs work -alex
+      shadeInstance.current?.remove?.();
+      shadeInstance.current = null;
+
+      mapInstance.current?.remove();
       mapInstance.current = null;
     };
   }, []);

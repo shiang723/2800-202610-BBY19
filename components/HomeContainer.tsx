@@ -4,25 +4,34 @@ import SearchBar from "@/components/SearchBar";
 import { Settings, Navigation } from "lucide-react";
 import { signOut } from "@/actions/auth";
 import { WelcomeTutorial } from "@/components/WelcomeTutorial";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Setting from "@/components/Settings";
 import Navbar from "./Navbar";
 
-
-const getInitialTutorial = () => {
-    if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("tutorial_enabled");
-        if (saved !== null) {
-            return saved === "true";
-        }
-    }
-    return true;
-};
+// -- Functionality moved into useEffect below
+// const getInitialTutorial = () => {
+//     if (typeof window !== "undefined") {
+//         const saved = localStorage.getItem("tutorial_enabled");
+//         if (saved !== null) {
+//             return saved === "true";
+//         }
+//     }
+//     return true;
+// };
 
 export default function HomeContainer({ userEmail }: { userEmail?: string }) {
 
-    const [tutorial, setTutorial] = useState(getInitialTutorial);
+    // -- Fix for hydration issue from ChatGPT using useEffect from React -alex
+    const [tutorial, setTutorial] = useState(true);
 
+    useEffect(() => {
+        const saved = localStorage.getItem("tutorial_enabled");
+
+        if (saved !== null) {
+            setTutorial(saved === "true");
+        }
+    }, []);
+    // -- End of hydration fix
 
     const handleUpdateTutorial = (newValue: boolean) => {
         setTutorial(newValue);
