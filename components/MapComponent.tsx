@@ -215,6 +215,7 @@ export default function MapComponent() {
           'id': dataSet.id,
           'source': dataSet.id,
           'type': 'symbol',
+          'minzoom': 12,
           'layout': {
             'icon-image': dataSet.id,
             'icon-size': 0.05,
