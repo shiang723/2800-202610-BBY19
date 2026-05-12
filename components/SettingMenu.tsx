@@ -1,11 +1,12 @@
 "use client"
 import { Settings } from "lucide-react";
 
-export default function ButtonComponent() {
+export default function SettingMenu() {
     function handleSettingMenu() {
         const settingMenu = document.getElementById("settings-menu") as HTMLDialogElement | null;
         settingMenu?.showModal();
     }
+
 
     return (
         <div className="absolute bottom-24 left-4 z-10">

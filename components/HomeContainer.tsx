@@ -14,7 +14,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                 <SearchBar />
                 <div className="flex gap-2">
                     {["Parks", "Water", "Shade"].map((label) => (
-                        <MapFilterBtn label={label}/>
+                        <MapFilterBtn key={label} label={label}/>
                     ))}
                 </div>
             </div>
