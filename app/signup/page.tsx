@@ -1,6 +1,7 @@
 'use client'
 import AuthenticationComponent from "@/components/AuthenticationComponent"
 import { signUpNewUser } from "@/actions/auth"
+import { createClientForClientComponent } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   return (
