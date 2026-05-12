@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
+import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
 
 import parks from "@/data/parks.json";
 import communityCentres from "@/data/community-centres.json";
+
+const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
@@ -14,6 +17,8 @@ const dataTables = [
   { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
   // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
 ]
+
+const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
 
 // function markerClick() {
 //   console.log("Marker clicked!");
@@ -23,16 +28,47 @@ const dataTables = [
 export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
+  const shadeInstance = useRef<ShadeMap | null>(null);
+  const dateInstance = useRef<Date>(new Date());
+
+  const [displayTime, setDisplayTime] = useState("");
+
+  const changeTime = (hours: number) => {
+    if (!shadeInstance.current) return;
+
+    const tempDate = new Date(dateInstance.current);
+    tempDate.setHours(tempDate.getHours() + hours);
+    dateInstance.current = tempDate;
+    shadeInstance.current.setDate(tempDate);
+
+    setDisplayTime(tempDate.toLocaleTimeString());
+  }
+
+  // Adapted from chatgpt
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newDate = new Date(dateInstance.current);
+
+      newDate.setSeconds(newDate.getSeconds() + 1);
+
+      dateInstance.current = newDate;
+      shadeInstance.current?.setDate(newDate);
+
+      setDisplayTime(
+        newDate.toLocaleTimeString()
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   useEffect(() => {
     if (mapInstance.current || !mapContainer.current) return;
 
-    const testDate = new Date();
-    testDate.setHours(6, 0, 0, 0);
-
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: `https://api.maptiler.com/maps/streets-v4/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`, //3D style nowww
+      style: `https://api.maptiler.com/maps/streets-v4/style.json?key=${maptilerApiKey}`, //3D style nowww
       center: [-123.1207, 49.2827], // Vancouver Coordinates
       zoom: 15,
       pitch: 45,
@@ -41,6 +77,44 @@ export default function MapComponent() {
     const map = mapInstance.current;
 
     map.on("load", async () => {
+
+      const geocoder = new GeocodingControl({
+        apiKey: maptilerApiKey,
+        country: "ca",
+        reverseActive: false,
+        limit: 5,
+        reverseGeocodingLimit: 1,
+        proximity: [{ type: "map-center" }],
+        types: ["poi", "address"],
+        bbox: bbox,
+        showPlaceType: "never",
+        placeholder: "Search for places in Vancouver",
+      });
+
+      document.getElementById("geocoderContainer")?.appendChild(geocoder.onAdd(map));
+
+      const searchBarStyle = document.createElement("style");
+      searchBarStyle.innerHTML = `
+        .input-group {
+          flex-direction: row-reverse !important;
+        }
+        form {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      `;
+
+      const searchDropdownStyle = document.createElement("style");
+      searchDropdownStyle.innerHTML = `
+        .line2 {
+          font-size: 10px !important;
+        }
+      `;
+
+      document.querySelector("maptiler-geocoder")?.shadowRoot?.appendChild(searchBarStyle);
+      document.querySelector("maptiler-geocoder-feature-item")?.shadowRoot?.appendChild(searchDropdownStyle);
+
+
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
@@ -64,8 +138,8 @@ export default function MapComponent() {
         { enableHighAccuracy: true },
       );
 
-      new ShadeMap({
-        date: testDate, // display shadows for current date
+      shadeInstance.current = new ShadeMap({
+        date: dateInstance.current, // display shadows for current date
         color: "#01112f", // shade color
         opacity: 0.7, // opacity of shade color
         apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
@@ -86,12 +160,7 @@ export default function MapComponent() {
         },
       }).addTo(map);
 
-      // advance shade by 1 hour
-      // shadeMap.setDate(new Date(Date.now() + 1000 * 60 * 60));
-
-      // sometime later
-      // ...remove layer
-      // shadeMap.remove();
+      setDisplayTime(dateInstance.current.toLocaleTimeString());
 
       for (const layer of styleLayers) {
         if (layer.type === "symbol") {
@@ -146,6 +215,7 @@ export default function MapComponent() {
           'id': dataSet.id,
           'source': dataSet.id,
           'type': 'symbol',
+          'minzoom': 12,
           'layout': {
             'icon-image': dataSet.id,
             'icon-size': 0.05,
@@ -191,7 +261,7 @@ export default function MapComponent() {
             `;
           }
 
-          new maplibregl.Popup({ className: "text-left", maxWidth: "200px" })
+          new maplibregl.Popup()
             .setLngLat(coordinates as [number, number])
             .setHTML(html)
             .addTo(map);
@@ -208,7 +278,7 @@ export default function MapComponent() {
         });
 
 
-        //// Similar logic but as markers instead of circles. Pros and cons to each
+        // --Marker logic, leaving for later use
         // for (const location of dataSet.data.features) {
         //   let lng = location.geometry.coordinates[0];
         //   let lat = location.geometry.coordinates[1];
@@ -231,15 +301,33 @@ export default function MapComponent() {
     });
 
     return () => {
-      map.remove();
+      // --Tried to fix the bug with the shade map not being removed, still needs work -alex
+      shadeInstance.current?.remove?.();
+      shadeInstance.current = null;
+
+      mapInstance.current?.remove();
       mapInstance.current = null;
     };
   }, []);
 
   return (
-    <div
-      ref={mapContainer}
-      className="h-screen w-full bg-zinc-200 dark:bg-zinc-800"
-    />
+    <div>
+      <div
+        ref={mapContainer}
+        className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
+      />
+      <div className="fixed bottom-25 left-0 right-0 flex justify-center bg-opacity-50 rounded">
+        <div className="flex justify-center">
+          <button onClick={() => changeTime(-1)} className="mx-1 px-3 py-1 bg-white text-black rounded">-1h</button>
+          <div className="mx-1 px-2 py-1 bg-white text-black rounded">{displayTime}</div>
+          <button onClick={() => changeTime(1)} className="mx-1 px-3 py-1 bg-white text-black rounded">+1h</button>
+        </div>
+      </div>
+
+    </div>
+
+
+
+
   );
 }
