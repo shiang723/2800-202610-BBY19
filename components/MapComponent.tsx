@@ -5,25 +5,40 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
+import { loadYelpData } from "@/lib/yelpLoader";
 
 import parks from "@/data/parks.json";
 import communityCentres from "@/data/community-centres.json";
 
-const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
+const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
-  { data: parks, color: '#38a269', id: 'parks', icon: '/park.png', type: 'Park' },
-  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
+  {
+    data: parks,
+    color: "#38a269",
+    id: "parks",
+    icon: "/park.png",
+    type: "Park",
+  },
+  {
+    data: communityCentres,
+    color: "#ff0000",
+    id: "community-centres",
+    icon: "/team.png",
+    type: "Community Centre",
+  },
   // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
-]
+];
 
-const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
+const bbox: [number, number, number, number] = [
+  -123.30131804763337, 49.00677789167195, -122.41360896119741,
+  49.56344307724677,
+]; // Vancouver bounding box
 
 // function markerClick() {
 //   console.log("Marker clicked!");
 // }
-
 
 export default function MapComponent() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -42,7 +57,7 @@ export default function MapComponent() {
     shadeInstance.current.setDate(tempDate);
 
     setDisplayTime(tempDate.toLocaleTimeString());
-  }
+  };
 
   // Adapted from chatgpt
   useEffect(() => {
@@ -54,14 +69,11 @@ export default function MapComponent() {
       dateInstance.current = newDate;
       shadeInstance.current?.setDate(newDate);
 
-      setDisplayTime(
-        newDate.toLocaleTimeString()
-      );
+      setDisplayTime(newDate.toLocaleTimeString());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
-
 
   useEffect(() => {
     if (mapInstance.current || !mapContainer.current) return;
@@ -77,7 +89,6 @@ export default function MapComponent() {
     const map = mapInstance.current;
 
     map.on("load", async () => {
-
       const geocoder = new GeocodingControl({
         apiKey: maptilerApiKey,
         country: "ca",
@@ -91,7 +102,9 @@ export default function MapComponent() {
         placeholder: "Search for places in Vancouver",
       });
 
-      document.getElementById("geocoderContainer")?.appendChild(geocoder.onAdd(map));
+      document
+        .getElementById("geocoderContainer")
+        ?.appendChild(geocoder.onAdd(map));
 
       const searchBarStyle = document.createElement("style");
       searchBarStyle.innerHTML = `
@@ -111,32 +124,53 @@ export default function MapComponent() {
         }
       `;
 
-      document.querySelector("maptiler-geocoder")?.shadowRoot?.appendChild(searchBarStyle);
-      document.querySelector("maptiler-geocoder-feature-item")?.shadowRoot?.appendChild(searchDropdownStyle);
-
+      document
+        .querySelector("maptiler-geocoder")
+        ?.shadowRoot?.appendChild(searchBarStyle);
+      document
+        .querySelector("maptiler-geocoder-feature-item")
+        ?.shadowRoot?.appendChild(searchDropdownStyle);
 
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
 
-          // Blue dot marker for user location
-          const el = document.createElement("div");
-          el.className =
-            "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+      // navigator.geolocation.getCurrentPosition(
+      //   async (pos) => {
+      //     const { latitude, longitude } = pos.coords;
 
-          new maplibregl.Marker({ element: el })
-            .setLngLat([longitude, latitude])
-            .addTo(map);
+      //     // Blue dot marker for user location
+      //     const el = document.createElement("div");
+      //     el.className =
+      //       "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
 
-          // Center map on user
-          map.flyTo({ center: [longitude, latitude], zoom: 15 });
-        },
-        (err) => console.error("Location error:", err),
-        { enableHighAccuracy: true },
-      );
+      //     new maplibregl.Marker({ element: el })
+      //       .setLngLat([longitude, latitude])
+      //       .addTo(map);
+
+      //     // Center map on user
+      //     map.flyTo({ center: [longitude, latitude], zoom: 15 });
+
+      //     await loadYelpData(latitude, longitude, map);
+      //   },
+      //   (err) => console.error("Location error:", err),
+      //   { enableHighAccuracy: true },
+      // );
+
+// temperary use vancovuer location
+const latitude = 49.2827;
+const longitude = -123.1207;
+
+      const el = document.createElement("div");
+      el.className =
+        "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+      new maplibregl.Marker({ element: el })
+        .setLngLat([longitude, latitude])
+        .addTo(map);
+
+      map.flyTo({ center: [longitude, latitude], zoom: 15 });
+
+      await loadYelpData(latitude, longitude, map);
 
       shadeInstance.current = new ShadeMap({
         date: dateInstance.current, // display shadows for current date
@@ -194,43 +228,37 @@ export default function MapComponent() {
         position: [1, 210, 30],
       });
 
-
-
-
       // Loop through the data tables and add a layer of points for each dataset
       for (const dataSet of dataTables) {
-
         const image = await map.loadImage(dataSet.icon);
 
         map.addImage(dataSet.id, image.data);
 
-
-
-
         map.addSource(dataSet.id, {
-          'type': "geojson",
-          'data': dataSet.data as GeoJSON.FeatureCollection,
+          type: "geojson",
+          data: dataSet.data as GeoJSON.FeatureCollection,
         });
         map.addLayer({
-          'id': dataSet.id,
-          'source': dataSet.id,
-          'type': 'symbol',
-          'minzoom': 12,
-          'layout': {
-            'icon-image': dataSet.id,
-            'icon-size': 0.05,
-          }
+          id: dataSet.id,
+          source: dataSet.id,
+          type: "symbol",
+          layout: {
+            "icon-image": dataSet.id,
+            "icon-size": 0.05,
+          },
         });
 
         // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
 
         // When a click event occurs on a feature in the places layer, open a popup at the
         // location of the feature, with description HTML from its properties.
-        map.on('click', dataSet.id, (e) => {
+        map.on("click", dataSet.id, (e) => {
           if (!e.features || !e.features[0]) return;
 
           const location = e.features[0];
-          const coordinates = (location.geometry as GeoJSON.Point).coordinates.slice();
+          const coordinates = (
+            location.geometry as GeoJSON.Point
+          ).coordinates.slice();
           const properties = location.properties;
 
           let html = `
@@ -238,7 +266,7 @@ export default function MapComponent() {
             <p class="text-xs">${dataSet.type}</p>
           `;
 
-          if (dataSet.id === 'parks') {
+          if (dataSet.id === "parks") {
             html += `
               <p class="text-xs">Washrooms: <b>${properties.washrooms}</b></p>
               <p>
@@ -250,7 +278,7 @@ export default function MapComponent() {
                   class="text-xs text-blue-500" target="_blank">More info</a>
               </p>
             `;
-          } else if (dataSet.id === 'community-centres') {
+          } else if (dataSet.id === "community-centres") {
             html += `
               <p class="text-xs">Washrooms: <b>Y</b></p>
               <p>
@@ -268,15 +296,14 @@ export default function MapComponent() {
         });
 
         // Change the cursor to a pointer when the mouse is over the places layer.
-        map.on('mouseenter', dataSet.id, () => {
-          map.getCanvas().style.cursor = 'pointer';
+        map.on("mouseenter", dataSet.id, () => {
+          map.getCanvas().style.cursor = "pointer";
         });
 
         // Change it back to a pointer when it leaves.
-        map.on('mouseleave', dataSet.id, () => {
-          map.getCanvas().style.cursor = '';
+        map.on("mouseleave", dataSet.id, () => {
+          map.getCanvas().style.cursor = "";
         });
-
 
         // --Marker logic, leaving for later use
         // for (const location of dataSet.data.features) {
@@ -292,12 +319,7 @@ export default function MapComponent() {
 
         //   marker.on("click", markerClick);
         // }
-
-
       }
-
-
-
     });
 
     return () => {
@@ -318,16 +340,23 @@ export default function MapComponent() {
       />
       <div className="fixed bottom-25 left-0 right-0 flex justify-center bg-opacity-50 rounded">
         <div className="flex justify-center">
-          <button onClick={() => changeTime(-1)} className="mx-1 px-3 py-1 bg-white text-black rounded">-1h</button>
-          <div className="mx-1 px-2 py-1 bg-white text-black rounded">{displayTime}</div>
-          <button onClick={() => changeTime(1)} className="mx-1 px-3 py-1 bg-white text-black rounded">+1h</button>
+          <button
+            onClick={() => changeTime(-1)}
+            className="mx-1 px-3 py-1 bg-white text-black rounded"
+          >
+            -1h
+          </button>
+          <div className="mx-1 px-2 py-1 bg-white text-black rounded">
+            {displayTime}
+          </div>
+          <button
+            onClick={() => changeTime(1)}
+            className="mx-1 px-3 py-1 bg-white text-black rounded"
+          >
+            +1h
+          </button>
         </div>
       </div>
-
     </div>
-
-
-
-
   );
 }
