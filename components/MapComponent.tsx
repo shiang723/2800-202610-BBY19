@@ -13,9 +13,9 @@ const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
 
 // Fill in when we have the data downloaded and imported like above
 const dataTables = [
-  { data: parks, color: '#38a269', id: 'parks', icon: '/park.png', type: 'Park' },
-  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
-  // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
+  { data: parks, id: 'parks', icon: '/park.png', type: 'Park', label: 'Parks' },
+  { data: communityCentres, id: 'community-centres', icon: '/team.png', type: 'Community Centre', label: 'Community Centres' },
+  // { data: waterFountain,  id: 'water-fountains' },
 ]
 
 const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
@@ -25,7 +25,7 @@ const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789
 // }
 
 
-export default function MapComponent() {
+export default function MapComponent({activeFilter}: {activeFilter: string | null}) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
@@ -278,6 +278,10 @@ export default function MapComponent() {
         });
 
 
+
+
+
+
         // --Marker logic, leaving for later use
         // for (const location of dataSet.data.features) {
         //   let lng = location.geometry.coordinates[0];
@@ -309,6 +313,19 @@ export default function MapComponent() {
       mapInstance.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !map.isStyleLoaded) return;
+    
+    for (const dataSet of dataTables) {
+      const selected = activeFilter === null || activeFilter === dataSet.label;
+      if (map.getLayer(dataSet.id)) {
+        map.setLayoutProperty(dataSet.id, 'visibility', selected ? 'visible' : 'none');
+      };
+    };
+  
+  }, [activeFilter]);
 
   return (
     <div>
