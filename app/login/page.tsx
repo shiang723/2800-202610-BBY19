@@ -5,8 +5,8 @@ import { signInWithEmail } from "@/actions/auth"
 export default function LoginPage() {
   return (
     <AuthenticationComponent
-      title="Log in Vancooler account"
-      submitBtnName="Sign in"
+      title="Log in"
+      submitBtnName="Sign in to account"
       successMessage="Congratulations! You are logged in"
       redirectPath="/"
       authFunction={signInWithEmail}
