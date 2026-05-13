@@ -1,8 +1,10 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithGoogleAccount } from '@/actions/auth';
+import Image from "next/image";
+
 
 /*
 The email couldn't start or finish with a dot
@@ -22,11 +24,11 @@ password is 8-16 characters with no space
 const passwordRegex = /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$/;
 
 interface AuthenticationComponentProps {
-    title: string,
-    submitBtnName: string,
-    authFunction: (email: string, password: string) => Promise<any>,
-    successMessage: string,
-    redirectPath: string
+  title: string;
+  submitBtnName: string;
+  authFunction: (email: string, password: string) => Promise<unknown>;
+  successMessage: string;
+  redirectPath: string;
 }
 
 export default function AuthenticationComponent({ title, submitBtnName, successMessage, redirectPath, authFunction }: AuthenticationComponentProps) {
@@ -122,24 +124,43 @@ export default function AuthenticationComponent({ title, submitBtnName, successM
     return (
         <div className="px-6 py-12 lg:px-8">
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                <p className='text-center font-bold text-xl mb-10'>{title}</p>
+            
+ {/* add logo here*/}
+        <div className="flex items-center gap-4 mb-10">
+          <Image
+            src="/VancoolerLogo.png"
+            alt="Logo"
+            width={250}
+            height={100}
+            className="object-contain dark:hidden"
+          />
+          <Image
+            src="/VancoolerLogoDark.png"
+            alt="Logo"
+            width={250}
+            height={100}
+            className="object-contain hidden dark:block"
+          />
+        </div>              
+
                 <form method="POST" className="flex flex-col gap-4 mb-4">
+
                     <div>
-                        <label htmlFor="email" className="text text-sm/6 font-medium text-gray-900">Email address</label>
-                        <input value={email} onChange={e => handleEmailChange(e)} id="email" type="email" name="email" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
-                        <p className='text-red-500 h-[12px] text-xs'>{emailErrorMsg}</p>
+                        <label htmlFor="email" className="text text-sm/6 font-medium text-gray-900 dark:text-white">Email address</label>
+                        <input value={email} onChange={e => handleEmailChange(e)} id="email" type="email" name="email" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-blue-500 sm:text-sm/6 mt-1" />
+                        <p className='text-red-500 h-[12px] text-xs mt-1'>{emailErrorMsg}</p>
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="text-sm/6 font-medium text-gray-900">Password</label>
-                        <input value={password} onChange={e => handlePasswordChange(e)} id="password" type="password" name="password" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
-                        <p className='text-red-500 h-[12px] text-xs'>{passwordErrorMsg}</p>
+                        <label htmlFor="password" className="text-sm/6 font-medium text-gray-900 dark:text-white">Password</label>
+                        <input value={password} onChange={e => handlePasswordChange(e)} id="password" type="password" name="password" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-blue-500 sm:text-sm/6 mt-1"/>
+                        <p className='text-red-500 h-[12px] text-xs mt-1'>{passwordErrorMsg}</p>
                     </div>
 
-                    <button onClick={handleSubmit} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500">{submitBtnName}</button>
+                    <button onClick={handleSubmit} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white">{submitBtnName}</button>
                 </form>
 
-                <button onClick={handleLoginWithGoogleAccount} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500">Sign in with Google</button>
+                <button onClick={handleLoginWithGoogleAccount} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white">Sign in with Google</button>
             </div>
         </div>
     )
