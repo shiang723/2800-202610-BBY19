@@ -36,8 +36,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, data: data.businesses || [] });
     } catch (error) {
       console.error("Yelp error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: errorMessage },
         { status: 500 },
       );
     }

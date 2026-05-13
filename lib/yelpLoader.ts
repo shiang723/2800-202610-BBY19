@@ -15,11 +15,11 @@ export async function loadYelpData(
     const data = await response.json();
 
     if (data.success && data.data.length) {
-      console.log(`✅ Loaded ${data.data.length} cafes from Yelp API`);
+      console.log(` Loaded ${data.data.length} cafes from Yelp API`);
 
       const cafeIcon = await map.loadImage("/cafe.png");
 
-      // ✅ make sure the image is loading
+      //  make sure the image is loading
       if (!cafeIcon || !cafeIcon.data) {
         console.error("Failed to load cafe icon");
         return false;
@@ -86,10 +86,8 @@ export async function loadYelpData(
             ${props.rating ? `<p class="text-sm mt-1">⭐ ${props.rating} / 5</p>` : ""}
             ${props.price ? `<p class="text-sm">💰 ${props.price}</p>` : ""}
             <p class="text-sm text-gray-500 mt-1">📍 ${props.address || "Address not available"}</p>
-            <button disabled class="w-full mt-3 bg-gray-400 text-white font-medium py-2 px-4 rounded-lg cursor-not-allowed">
-              🔒 Save to Collection (Coming Soon)
-            </button>
-          </div>
+            <button disabled class="w-full mt-3 bg-blue-00 text-white font-medium py-2 px-4 rounded-lg cursor-not-allowed">
+              Save to Collection (Coming Soon)
         `;
 
         new maplibregl.Popup().setLngLat(coords).setHTML(html).addTo(map);

@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
+import { loadYelpData } from "@/lib/yelpLoader";
 
 import parks from "@/data/parks.json";
 import communityCentres from "@/data/community-centres.json";
@@ -133,8 +134,9 @@ export default function MapComponent() {
       const sources = map.getStyle().sources;
       const buildingSource = "maptiler_planet_v4";
       const styleLayers = map.getStyle().layers;
+
       // navigator.geolocation.getCurrentPosition(
-      //   (pos) => {
+      //   async (pos) => {
       //     const { latitude, longitude } = pos.coords;
 
       //     // Blue dot marker for user location
@@ -148,15 +150,27 @@ export default function MapComponent() {
 
       //     // Center map on user
       //     map.flyTo({ center: [longitude, latitude], zoom: 15 });
+
+      //     await loadYelpData(latitude, longitude, map);
       //   },
       //   (err) => console.error("Location error:", err),
       //   { enableHighAccuracy: true },
       // );
-      
-      const VANCOUVER_COORDS = {
-        lat: 49.2827,
-        lng: -123.1207,
-      };
+
+// temperary use vancovuer location
+const latitude = 49.2827;
+const longitude = -123.1207;
+
+      const el = document.createElement("div");
+      el.className =
+        "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+      new maplibregl.Marker({ element: el })
+        .setLngLat([longitude, latitude])
+        .addTo(map);
+
+      map.flyTo({ center: [longitude, latitude], zoom: 15 });
+
+      await loadYelpData(latitude, longitude, map);
 
       shadeInstance.current = new ShadeMap({
         date: dateInstance.current, // display shadows for current date
@@ -228,7 +242,6 @@ export default function MapComponent() {
           id: dataSet.id,
           source: dataSet.id,
           type: "symbol",
-          minzoom: 12,
           layout: {
             "icon-image": dataSet.id,
             "icon-size": 0.05,
