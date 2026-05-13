@@ -25,7 +25,7 @@ const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789
 // }
 
 
-export default function MapComponent({activeFilter}: {activeFilter: string | null}) {
+export default function MapComponent({ activeFilter }: { activeFilter: string | null }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
@@ -64,6 +64,8 @@ export default function MapComponent({activeFilter}: {activeFilter: string | nul
 
 
   useEffect(() => {
+    let mapMounted = true;
+
     if (mapInstance.current || !mapContainer.current) return;
 
     mapInstance.current = new maplibregl.Map({
@@ -77,6 +79,7 @@ export default function MapComponent({activeFilter}: {activeFilter: string | nul
     const map = mapInstance.current;
 
     map.on("load", async () => {
+      if (!mapMounted) return;
 
       const geocoder = new GeocodingControl({
         apiKey: maptilerApiKey,
@@ -278,10 +281,6 @@ export default function MapComponent({activeFilter}: {activeFilter: string | nul
         });
 
 
-
-
-
-
         // --Marker logic, leaving for later use
         // for (const location of dataSet.data.features) {
         //   let lng = location.geometry.coordinates[0];
@@ -297,34 +296,45 @@ export default function MapComponent({activeFilter}: {activeFilter: string | nul
         //   marker.on("click", markerClick);
         // }
 
-
       }
-
-
 
     });
 
     return () => {
-      // --Tried to fix the bug with the shade map not being removed, still needs work -alex
-      shadeInstance.current?.remove?.();
-      shadeInstance.current = null;
+      mapMounted = false;
 
-      mapInstance.current?.remove();
-      mapInstance.current = null;
+      try {
+        shadeInstance.current?.remove?.();
+      } catch (e) {
+        // safe to ignore
+      } finally {
+        shadeInstance.current = null;
+      }
+
+      // Add a slight delay so the shademap can be (hopefully) removed first
+      setTimeout(() => {
+        try {
+          mapInstance.current?.remove();
+        } catch (e) {
+          // safe to ignore
+        } finally {
+          mapInstance.current = null;
+        }
+      }, 300);
     };
   }, []);
 
   useEffect(() => {
     const map = mapInstance.current;
     if (!map || !map.isStyleLoaded) return;
-    
+
     for (const dataSet of dataTables) {
       const selected = activeFilter === null || activeFilter === dataSet.label;
       if (map.getLayer(dataSet.id)) {
         map.setLayoutProperty(dataSet.id, 'visibility', selected ? 'visible' : 'none');
       };
     };
-  
+
   }, [activeFilter]);
 
   return (
