@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { UserCircle } from "lucide-react";
 export default function SearchBar() {
   return (
