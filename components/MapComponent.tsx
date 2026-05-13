@@ -6,16 +6,15 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
 
-import parks from "@/data/parks.json";
-import communityCentres from "@/data/community-centres.json";
-
 const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
 
 // Fill in when we have the data downloaded and imported like above
-const dataTables = [
-  { data: parks, color: '#38a269', id: 'parks', icon: '/park.png', type: 'Park' },
-  { data: communityCentres, color: '#ff0000', id: 'community-centres', icon: '/team.png', type: 'Community Centre' },
-  // { data: waterFountain, color: '#0E87CC', id: 'water-fountains' },
+const dataTables = [          
+
+  { id: 'parks', icon: 'park', type: 'Park', label: 'Parks' },
+  { id: 'community-centres', icon: 'community', type: 'Community Centre', label: 'Community Centres' },
+  { id: 'drinking-fountains', icon: 'fountain', type: 'Water Fountain', label: 'Water Fountains', filter: (feature: GeoJSON.Feature) => feature.properties?.name.includes("Fountain") },
+  { id: 'public-washrooms', icon: 'washroom', type: 'Washroom', label: 'Washrooms', filter: (feature: GeoJSON.Feature) => feature.properties?.park_name !== null },
 ]
 
 const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
@@ -25,7 +24,7 @@ const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789
 // }
 
 
-export default function MapComponent() {
+export default function MapComponent({ activeFilter }: { activeFilter: string | null }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
@@ -64,6 +63,8 @@ export default function MapComponent() {
 
 
   useEffect(() => {
+    let mapMounted = true;
+
     if (mapInstance.current || !mapContainer.current) return;
 
     mapInstance.current = new maplibregl.Map({
@@ -77,6 +78,7 @@ export default function MapComponent() {
     const map = mapInstance.current;
 
     map.on("load", async () => {
+      if (!mapMounted) return;
 
       const geocoder = new GeocodingControl({
         apiKey: maptilerApiKey,
@@ -200,16 +202,20 @@ export default function MapComponent() {
       // Loop through the data tables and add a layer of points for each dataset
       for (const dataSet of dataTables) {
 
-        const image = await map.loadImage(dataSet.icon);
+        const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`
+        const data = await fetch(url).then(res => res.json()) as GeoJSON.FeatureCollection;
+        const dataFiltered = {
+          ...data,
+          features: dataSet.filter ? data.features.filter(dataSet.filter) : data.features
+        };
+
+        const image = await map.loadImage("/" + dataSet.icon + ".png");
 
         map.addImage(dataSet.id, image.data);
 
-
-
-
         map.addSource(dataSet.id, {
           'type': "geojson",
-          'data': dataSet.data as GeoJSON.FeatureCollection,
+          'data': dataFiltered,
         });
         map.addLayer({
           'id': dataSet.id,
@@ -233,14 +239,13 @@ export default function MapComponent() {
           const coordinates = (location.geometry as GeoJSON.Point).coordinates.slice();
           const properties = location.properties;
 
-          let html = `
-            <p class="text-sm font-bold">${properties.name}</p>
-            <p class="text-xs">${dataSet.type}</p>
-          `;
+          let html = ``;
 
           if (dataSet.id === 'parks') {
             html += `
-              <p class="text-xs">Washrooms: <b>${properties.washrooms}</b></p>
+              <p class="text-sm font-bold">${properties.name}</p>
+              <p class="text-xs">${dataSet.type}</p>
+              <p class="text-xs"><b>Washrooms: </b>${properties.washrooms}</p>
               <p>
                 <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
                   class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
@@ -252,13 +257,29 @@ export default function MapComponent() {
             `;
           } else if (dataSet.id === 'community-centres') {
             html += `
-              <p class="text-xs">Washrooms: <b>Y</b></p>
+              <p class="text-sm font-bold">${properties.name}</p>
+              <p class="text-xs">${dataSet.type}</p>
+              <p class="text-xs"><b>Washrooms: </b>Y</p>
               <p>
                 <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
                   class="text-xs text-blue-500" target="_blank">${properties.address}</a>
               </p>
               <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
             `;
+          } else if (dataSet.id === 'drinking-fountains') {
+            let nameFilter = properties.name.indexOf("location:");
+            let name = properties.name.slice(nameFilter + 9).trim();
+              html += `
+                <p class="text-sm font-bold">${name}</p>
+                <p class="text-xs">${dataSet.type}</p>
+                <p class="text-xs"><b>Location: </b>${properties.location}</p>
+              `;
+          } else if (dataSet.id === 'public-washrooms') {
+              html += `
+                <p class="text-sm font-bold">${properties.park_name}</p>
+                <p class="text-xs">${dataSet.type}</p>
+                <p class="text-xs"><b>Location: </b>${properties.location}</p>
+              `;
           }
 
           new maplibregl.Popup()
@@ -293,22 +314,46 @@ export default function MapComponent() {
         //   marker.on("click", markerClick);
         // }
 
-
       }
-
-
 
     });
 
     return () => {
-      // --Tried to fix the bug with the shade map not being removed, still needs work -alex
-      shadeInstance.current?.remove?.();
-      shadeInstance.current = null;
+      mapMounted = false;
 
-      mapInstance.current?.remove();
-      mapInstance.current = null;
+      try {
+        shadeInstance.current?.remove?.();
+      } catch (e) {
+        // safe to ignore
+      } finally {
+        shadeInstance.current = null;
+      }
+
+      // Add a slight delay so the shademap can be (hopefully) removed first
+      setTimeout(() => {
+        try {
+          mapInstance.current?.remove();
+        } catch (e) {
+          // safe to ignore
+        } finally {
+          mapInstance.current = null;
+        }
+      }, 300);
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !map.isStyleLoaded) return;
+
+    for (const dataSet of dataTables) {
+      const selected = activeFilter === null || activeFilter === dataSet.label;
+      if (map.getLayer(dataSet.id)) {
+        map.setLayoutProperty(dataSet.id, 'visibility', selected ? 'visible' : 'none');
+      };
+    };
+
+  }, [activeFilter]);
 
   return (
     <div>
