@@ -13,8 +13,8 @@ const dataTables = [
 
   { id: 'parks', icon: 'park', type: 'Park', label: 'Parks' },
   { id: 'community-centres', icon: 'community', type: 'Community Centre', label: 'Community Centres' },
-  { id: 'drinking-fountains', icon: 'fountain', type: 'Water Fountain', label: 'Water Fountains', filter: (feature: GeoJSON.Feature) => feature.properties?.name.includes("Fountain") },
-  { id: 'public-washrooms', icon: 'washroom', type: 'Washroom', label: 'Washrooms', filter: (feature: GeoJSON.Feature) => feature.properties?.park_name !== null },
+  { id: 'drinking-fountains', icon: 'fountain',  minZoom: 14.35, type: 'Water Fountain', label: 'Water Fountains', filter: (feature: GeoJSON.Feature) => feature.properties?.name.includes("Fountain") },
+  { id: 'public-washrooms', icon: 'washroom', iconSize: 0.06, minZoom: 14.35, type: 'Washroom', label: 'Washrooms', filter: (feature: GeoJSON.Feature) => feature.properties?.park_name !== null },
 ]
 
 const bbox: [number, number, number, number] = [-123.30131804763337, 49.00677789167195, -122.41360896119741, 49.56344307724677]; // Vancouver bounding box
@@ -221,10 +221,10 @@ export default function MapComponent({ activeFilter }: { activeFilter: string | 
           'id': dataSet.id,
           'source': dataSet.id,
           'type': 'symbol',
-          'minzoom': 12,
+          'minzoom': dataSet.minZoom || 11.75,
           'layout': {
             'icon-image': dataSet.id,
-            'icon-size': 0.05,
+            'icon-size': dataSet.iconSize || 0.05,
           }
         });
 
@@ -350,6 +350,12 @@ export default function MapComponent({ activeFilter }: { activeFilter: string | 
       const selected = activeFilter === null || activeFilter === dataSet.label;
       if (map.getLayer(dataSet.id)) {
         map.setLayoutProperty(dataSet.id, 'visibility', selected ? 'visible' : 'none');
+        if (activeFilter === dataSet.label) {
+          map.setLayerZoomRange(dataSet.id, 11.75, 24);
+        } else {
+          map.setLayerZoomRange(dataSet.id, dataSet.minZoom || 11.75, 24);
+        }
+
       };
     };
 
