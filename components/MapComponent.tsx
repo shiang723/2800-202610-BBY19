@@ -9,7 +9,6 @@ import { loadYelpData } from "@/lib/yelpLoader";
 
 const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
-// Fill in when we have the data downloaded and imported like above
 const dataTables = [
   { id: "parks", icon: "park", type: "Park", label: "Parks" },
   {
@@ -44,9 +43,221 @@ const bbox: [number, number, number, number] = [
   49.56344307724677,
 ]; // Vancouver bounding box
 
-// function markerClick() {
-//   console.log("Marker clicked!");
-// }
+function setupSearchbar(map: maplibregl.Map) {
+  const geocoder = new GeocodingControl({
+    apiKey: maptilerApiKey,
+    country: "ca",
+    reverseActive: false,
+    limit: 5,
+    reverseGeocodingLimit: 1,
+    proximity: [{ type: "map-center" }],
+    types: ["poi", "address"],
+    bbox: bbox,
+    showPlaceType: "never",
+    placeholder: "Search for places in Vancouver",
+  });
+
+  document
+    .getElementById("geocoderContainer")
+    ?.appendChild(geocoder.onAdd(map));
+
+  const searchBarStyle = document.createElement("style");
+  searchBarStyle.innerHTML = `
+        .input-group {
+          flex-direction: row-reverse !important;
+        }
+        form {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      `;
+
+  const searchDropdownStyle = document.createElement("style");
+  searchDropdownStyle.innerHTML = `
+        .line2 {
+          font-size: 10px !important;
+        }
+      `;
+
+  document
+    .querySelector("maptiler-geocoder")
+    ?.shadowRoot?.appendChild(searchBarStyle);
+  document
+    .querySelector("maptiler-geocoder-feature-item")
+    ?.shadowRoot?.appendChild(searchDropdownStyle);
+};
+
+function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<ShadeMap | null>, dateInstance: React.RefObject<Date>) {
+
+
+  shadeInstance.current = new ShadeMap({
+    date: dateInstance.current, // display shadows for current date
+    color: "#01112f", // shade color
+    opacity: 0.7, // opacity of shade color
+    apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
+    terrainSource: {
+      tileSize: 256, // DEM tile size
+      maxZoom: 15, // Maximum zoom of DEM tile set
+      getSourceUrl: ({ x, y, z }) => {
+        // return DEM tile url for given x,y,z coordinates
+        return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+      },
+      getElevation: ({ r, g, b }) => {
+        // return elevation in meters for a given DEM tile pixel
+        return r * 256 + g + b / 256 - 32768;
+      },
+    },
+    debug: (msg) => {
+      console.log(new Date().toISOString(), msg);
+    },
+  }).addTo(map);
+
+  const sources = map.getStyle().sources;
+  const buildingSource = "maptiler_planet_v4";
+  const styleLayers = map.getStyle().layers;
+
+  for (const layer of styleLayers) {
+    if (layer.type === "symbol") {
+      map.removeLayer(layer.id);
+    }
+  }
+
+  if (!sources[buildingSource]) {
+    console.error("Could not find a valid vector source for buildings.");
+    return;
+  }
+
+  map.addLayer({
+    id: "3d-buildings",
+    source: buildingSource,
+    "source-layer": "building",
+    type: "fill-extrusion",
+    minzoom: 14,
+    paint: {
+      "fill-extrusion-color": "#ffffff",
+      "fill-extrusion-height": ["get", "render_height"],
+      "fill-extrusion-base": ["get", "render_min_height"],
+      "fill-extrusion-opacity": 1.0,
+    },
+  });
+
+  map.setLight({
+    anchor: "map",
+    color: "#fff8e7",
+    intensity: 0.4,
+    position: [1, 210, 30],
+  });
+};
+
+async function setupCityData(map: maplibregl.Map) {
+
+  // Loop through the data tables and add a layer of points for each dataset
+  for (const dataSet of dataTables) {
+    const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
+    const data = (await fetch(url).then((res) =>
+      res.json(),
+    )) as GeoJSON.FeatureCollection;
+    const dataFiltered = {
+      ...data,
+      features: dataSet.filter
+        ? data.features.filter(dataSet.filter)
+        : data.features,
+    };
+
+    const image = await map.loadImage("/" + dataSet.icon + ".png");
+
+    map.addImage(dataSet.id, image.data);
+
+    map.addSource(dataSet.id, {
+      type: "geojson",
+      data: dataFiltered,
+    });
+    map.addLayer({
+      id: dataSet.id,
+      source: dataSet.id,
+      type: "symbol",
+      minzoom: dataSet.minZoom || 11.75,
+      layout: {
+        "icon-image": dataSet.id,
+        "icon-size": dataSet.iconSize || 0.05,
+      },
+    });
+
+    // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
+
+    // When a click event occurs on a feature in the places layer, open a popup at the
+    // location of the feature, with description HTML from its properties.
+    map.on("click", dataSet.id, (e) => {
+      if (!e.features || !e.features[0]) return;
+
+      const location = e.features[0];
+      const coordinates = (
+        location.geometry as GeoJSON.Point
+      ).coordinates.slice();
+      const properties = location.properties;
+
+      let html = ``;
+
+      if (dataSet.id === "parks") {
+        html += `
+              <p class="text-sm font-bold">${properties.name}</p>
+              <p class="text-xs">${dataSet.type}</p>
+              <p class="text-xs"><b>Washrooms: </b>${properties.washrooms}</p>
+              <p>
+                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+                  class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
+              </p>
+              <p>
+                <a href="https://covapp.vancouver.ca/parkfinder/parkdetail.aspx?inparkid=${properties.parkid}"
+                  class="text-xs text-blue-500" target="_blank">More info</a>
+              </p>
+            `;
+      } else if (dataSet.id === "community-centres") {
+        html += `
+              <p class="text-sm font-bold">${properties.name}</p>
+              <p class="text-xs">${dataSet.type}</p>
+              <p class="text-xs"><b>Washrooms: </b>Y</p>
+              <p>
+                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+                  class="text-xs text-blue-500" target="_blank">${properties.address}</a>
+              </p>
+              <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
+            `;
+      } else if (dataSet.id === "drinking-fountains") {
+        const nameFilter = properties.name.indexOf("location:");
+        const name = properties.name.slice(nameFilter + 9).trim();
+        html += `
+                <p class="text-sm font-bold">${name}</p>
+                <p class="text-xs">${dataSet.type}</p>
+                <p class="text-xs"><b>Location: </b>${properties.location}</p>
+              `;
+      } else if (dataSet.id === "public-washrooms") {
+        html += `
+                <p class="text-sm font-bold">${properties.park_name}</p>
+                <p class="text-xs">${dataSet.type}</p>
+                <p class="text-xs"><b>Location: </b>${properties.location}</p>
+              `;
+      }
+
+      new maplibregl.Popup()
+        .setLngLat(coordinates as [number, number])
+        .setHTML(html)
+        .addTo(map);
+    });
+
+    // Change the cursor to a pointer when the mouse is over the places layer.
+    map.on("mouseenter", dataSet.id, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    // Change it back to a pointer when it leaves.
+    map.on("mouseleave", dataSet.id, () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+  }
+};
+
 
 export default function MapComponent({
   activeFilter,
@@ -102,57 +313,11 @@ export default function MapComponent({
 
     const map = mapInstance.current;
 
-    map.on("load", async () => {
+    map.on("load", () => {
       if (!mapMounted) return;
 
-      const geocoder = new GeocodingControl({
-        apiKey: maptilerApiKey,
-        country: "ca",
-        reverseActive: false,
-        limit: 5,
-        reverseGeocodingLimit: 1,
-        proximity: [{ type: "map-center" }],
-        types: ["poi", "address"],
-        bbox: bbox,
-        showPlaceType: "never",
-        placeholder: "Search for places in Vancouver",
-      });
-
-      document
-        .getElementById("geocoderContainer")
-        ?.appendChild(geocoder.onAdd(map));
-
-      const searchBarStyle = document.createElement("style");
-      searchBarStyle.innerHTML = `
-        .input-group {
-          flex-direction: row-reverse !important;
-        }
-        form {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-      `;
-
-      const searchDropdownStyle = document.createElement("style");
-      searchDropdownStyle.innerHTML = `
-        .line2 {
-          font-size: 10px !important;
-        }
-      `;
-
-      document
-        .querySelector("maptiler-geocoder")
-        ?.shadowRoot?.appendChild(searchBarStyle);
-      document
-        .querySelector("maptiler-geocoder-feature-item")
-        ?.shadowRoot?.appendChild(searchDropdownStyle);
-
-      const sources = map.getStyle().sources;
-      const buildingSource = "maptiler_planet_v4";
-      const styleLayers = map.getStyle().layers;
-
       // navigator.geolocation.getCurrentPosition(
-      //   async (pos) => {
+      //   (pos) => {
       //     const { latitude, longitude } = pos.coords;
 
       //     // Blue dot marker for user location
@@ -167,7 +332,6 @@ export default function MapComponent({
       //     // Center map on user
       //     map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
-      //     await loadYelpData(latitude, longitude, map);
       //   },
       //   (err) => console.error("Location error:", err),
       //   { enableHighAccuracy: true },
@@ -186,182 +350,17 @@ export default function MapComponent({
 
       map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
-      shadeInstance.current = new ShadeMap({
-        date: dateInstance.current, // display shadows for current date
-        color: "#01112f", // shade color
-        opacity: 0.7, // opacity of shade color
-        apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
-        terrainSource: {
-          tileSize: 256, // DEM tile size
-          maxZoom: 15, // Maximum zoom of DEM tile set
-          getSourceUrl: ({ x, y, z }) => {
-            // return DEM tile url for given x,y,z coordinates
-            return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
-          },
-          getElevation: ({ r, g, b }) => {
-            // return elevation in meters for a given DEM tile pixel
-            return r * 256 + g + b / 256 - 32768;
-          },
-        },
-        debug: (msg) => {
-          console.log(new Date().toISOString(), msg);
-        },
-      }).addTo(map);
+
 
       setDisplayTime(dateInstance.current.toLocaleTimeString());
 
-      for (const layer of styleLayers) {
-        if (layer.type === "symbol") {
-          map.removeLayer(layer.id);
-        }
-      }
+      setupSearchbar(map);
+      setupShadeMap(map, shadeInstance, dateInstance);
+      setupCityData(map);
+      loadYelpData(latitude, longitude, map);
 
-      if (!sources[buildingSource]) {
-        console.error("Could not find a valid vector source for buildings.");
-        return;
-      }
 
-      map.addLayer({
-        id: "3d-buildings",
-        source: buildingSource,
-        "source-layer": "building",
-        type: "fill-extrusion",
-        minzoom: 14,
-        paint: {
-          "fill-extrusion-color": "#ffffff",
-          "fill-extrusion-height": ["get", "render_height"],
-          "fill-extrusion-base": ["get", "render_min_height"],
-          "fill-extrusion-opacity": 1.0,
-        },
-      });
 
-      map.setLight({
-        anchor: "map",
-        color: "#fff8e7",
-        intensity: 0.4,
-        position: [1, 210, 30],
-      });
-
-      // Loop through the data tables and add a layer of points for each dataset
-      for (const dataSet of dataTables) {
-        const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
-        const data = (await fetch(url).then((res) =>
-          res.json(),
-        )) as GeoJSON.FeatureCollection;
-        const dataFiltered = {
-          ...data,
-          features: dataSet.filter
-            ? data.features.filter(dataSet.filter)
-            : data.features,
-        };
-
-        const image = await map.loadImage("/" + dataSet.icon + ".png");
-
-        map.addImage(dataSet.id, image.data);
-
-        map.addSource(dataSet.id, {
-          type: "geojson",
-          data: dataFiltered,
-        });
-        map.addLayer({
-          id: dataSet.id,
-          source: dataSet.id,
-          type: "symbol",
-          minzoom: dataSet.minZoom || 11.75,
-          layout: {
-            "icon-image": dataSet.id,
-            "icon-size": dataSet.iconSize || 0.05,
-          },
-        });
-
-        // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
-
-        // When a click event occurs on a feature in the places layer, open a popup at the
-        // location of the feature, with description HTML from its properties.
-        map.on("click", dataSet.id, (e) => {
-          if (!e.features || !e.features[0]) return;
-
-          const location = e.features[0];
-          const coordinates = (
-            location.geometry as GeoJSON.Point
-          ).coordinates.slice();
-          const properties = location.properties;
-
-          let html = ``;
-
-          if (dataSet.id === "parks") {
-            html += `
-              <p class="text-sm font-bold">${properties.name}</p>
-              <p class="text-xs">${dataSet.type}</p>
-              <p class="text-xs"><b>Washrooms: </b>${properties.washrooms}</p>
-              <p>
-                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
-                  class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
-              </p>
-              <p>
-                <a href="https://covapp.vancouver.ca/parkfinder/parkdetail.aspx?inparkid=${properties.parkid}"
-                  class="text-xs text-blue-500" target="_blank">More info</a>
-              </p>
-            `;
-          } else if (dataSet.id === "community-centres") {
-            html += `
-              <p class="text-sm font-bold">${properties.name}</p>
-              <p class="text-xs">${dataSet.type}</p>
-              <p class="text-xs"><b>Washrooms: </b>Y</p>
-              <p>
-                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
-                  class="text-xs text-blue-500" target="_blank">${properties.address}</a>
-              </p>
-              <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
-            `;
-          } else if (dataSet.id === "drinking-fountains") {
-            const nameFilter = properties.name.indexOf("location:");
-            const name = properties.name.slice(nameFilter + 9).trim();
-            html += `
-                <p class="text-sm font-bold">${name}</p>
-                <p class="text-xs">${dataSet.type}</p>
-                <p class="text-xs"><b>Location: </b>${properties.location}</p>
-              `;
-          } else if (dataSet.id === "public-washrooms") {
-            html += `
-                <p class="text-sm font-bold">${properties.park_name}</p>
-                <p class="text-xs">${dataSet.type}</p>
-                <p class="text-xs"><b>Location: </b>${properties.location}</p>
-              `;
-          }
-
-          new maplibregl.Popup()
-            .setLngLat(coordinates as [number, number])
-            .setHTML(html)
-            .addTo(map);
-        });
-
-        // Change the cursor to a pointer when the mouse is over the places layer.
-        map.on("mouseenter", dataSet.id, () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-
-        // Change it back to a pointer when it leaves.
-        map.on("mouseleave", dataSet.id, () => {
-          map.getCanvas().style.cursor = "";
-        });
-
-        // --Marker logic, leaving for later use
-        // for (const location of dataSet.data.features) {
-        //   let lng = location.geometry.coordinates[0];
-        //   let lat = location.geometry.coordinates[1];
-        //   let marker = new maplibregl.Marker({
-        //     color: dataSet.color,
-        //     className: dataSet.className,
-        //     scale: 0.75,
-        //   })
-        //     .setLngLat([lng, lat])
-        //     .addTo(map);
-
-        //   marker.on("click", markerClick);
-        // }
-      }
-      await loadYelpData(latitude, longitude, map);
 
     });
 
@@ -369,26 +368,27 @@ export default function MapComponent({
       mapMounted = false;
 
       try {
-        shadeInstance.current?.remove?.();
+        if (shadeInstance.current) {
+          shadeInstance.current.remove();
+          shadeInstance.current = null;
+        }
+        if (mapInstance.current) {
+          mapInstance.current.remove();
+          mapInstance.current = null;
+        }
       } catch (e) {
-        // safe to ignore (?)
-      } finally {
+        // Force null even if removal threw
         shadeInstance.current = null;
-      }
-
-      try {
-        mapInstance.current?.remove();
-      } catch (e) {
-        // safe to ignore (?)
-      } finally {
         mapInstance.current = null;
       }
+
+
     };
   }, []);
 
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map || !map.isStyleLoaded) return;
+    if (!map || !map.isStyleLoaded()) return;
 
     for (const dataSet of dataTables) {
       const selected = activeFilter === null || activeFilter === dataSet.label;

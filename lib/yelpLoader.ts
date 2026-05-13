@@ -6,7 +6,7 @@ import maplibregl from "maplibre-gl";
 export async function loadYelpData(
   latitude: number,
   longitude: number,
-  map: any,
+  map: maplibregl.Map,
 ) {
   try {
     const response = await fetch(
@@ -88,6 +88,8 @@ export async function loadYelpData(
             <p class="text-sm text-gray-500 mt-1">📍 ${props.address || "Address not available"}</p>
             <button disabled class="w-full mt-3 bg-blue-00 text-white font-medium py-2 px-4 rounded-lg cursor-not-allowed">
               Save to Collection (Coming Soon)
+              </button>
+          </div>
         `;
 
         new maplibregl.Popup().setLngLat(coords).setHTML(html).addTo(map);
