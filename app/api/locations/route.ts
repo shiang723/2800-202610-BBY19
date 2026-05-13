@@ -21,8 +21,12 @@ export async function GET(request: Request) {
     try {
       const url = new URL("https://api.yelp.com/v3/businesses/search");
       url.searchParams.append("location", location);
-      url.searchParams.append("term", "cafe");
-      url.searchParams.append("radius", "5000");
+      url.searchParams.append("term", "coffee");
+      url.searchParams.append(
+        "categories",
+        "cafes,bubbletea,donuts,tea,juicebars,smoothies",
+      );
+      url.searchParams.append("radius", "40000");
       url.searchParams.append("limit", "50");
 
       const response = await fetch(url.toString(), {

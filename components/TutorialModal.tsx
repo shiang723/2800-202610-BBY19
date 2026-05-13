@@ -106,7 +106,7 @@ export default function TutorialModal({
             onClick={() => {
               handleNext();
             }}
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2 pl-4 pr-4 ml-auto"
+            className="bg-blue-500 hover:bg-blue-400 text-white rounded-lg p-2 pl-4 pr-4 ml-auto"
             autoFocus={true}
           >
             {nextButtonText}
