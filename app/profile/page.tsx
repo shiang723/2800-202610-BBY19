@@ -11,7 +11,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  // 获取用户信息
+  // user information
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -22,7 +22,7 @@ export default function Profile() {
     fetchUser();
   }, []);
 
-  // 获取收藏列表
+  // collection list
   const fetchFavorites = async () => {
     setLoading(true);
     try {
@@ -54,11 +54,11 @@ export default function Profile() {
     });
     const data = await response.json();
     if (data.success) {
-      fetchFavorites(); // 刷新列表
+      fetchFavorites(); // refreash the list
     }
   };
 
-  // 获取显示名称
+  // get dispay name
   const displayName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
 
@@ -74,7 +74,7 @@ export default function Profile() {
 
         <p className="text-3xl text-black font-bold mt-2">Profile</p>
 
-        {/* 用户信息 - 动态从 Supabase 获取 */}
+        {/* user information - dyanamic infor from Supabase */}
         <div className="bg-white rounded-xl p-4 mt-4 shadow">
           <div className="text-black text-lg flex flex-col gap-3">
             <div className="flex flex-row gap-2">
@@ -85,7 +85,7 @@ export default function Profile() {
               <span className="font-semibold min-w-[60px]">Email:</span>
               <p>{user?.email || "Not logged in"}</p>
             </div>
-            {/* Age 可以后续从 user_metadata 获取，暂时隐藏或保留占位 */}
+            {/* Age can get age */}
             {/* <div className="flex flex-row gap-2">
               <span className="font-semibold min-w-[60px]">Age:</span>
               <p>{user?.user_metadata?.age || 'Not set'}</p>
@@ -93,7 +93,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 收藏地点 - 动态从 API 获取 */}
+        {/* collect the location from api*/}
         <p className="text-2xl text-black font-semibold m-2 mt-6">
           Saved Locations
         </p>
