@@ -186,8 +186,6 @@ export default function MapComponent({
 
       map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
-      await loadYelpData(latitude, longitude, map);
-
       shadeInstance.current = new ShadeMap({
         date: dateInstance.current, // display shadows for current date
         color: "#01112f", // shade color
@@ -363,6 +361,8 @@ export default function MapComponent({
         //   marker.on("click", markerClick);
         // }
       }
+      await loadYelpData(latitude, longitude, map);
+
     });
 
     return () => {
