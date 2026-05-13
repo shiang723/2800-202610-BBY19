@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { signInWithGoogleAccount } from '@/actions/auth';
 
 /*
 The email couldn't start or finish with a dot
@@ -77,9 +78,7 @@ export default function AuthenticationComponent({ title, submitBtnName, successM
     }
 
     // Function hanldes submitting user crendentials
-    async function handleSubmit(e: React.MouseEvent) {
-        e.preventDefault();
-
+    async function handleSubmit() {
         if (!email) {
             alert("Please provide email!");
             return;
@@ -109,25 +108,38 @@ export default function AuthenticationComponent({ title, submitBtnName, successM
         }
     }
 
+    // Function handles logging in with google account
+    async function handleLoginWithGoogleAccount() {
+        try {
+            const url = await signInWithGoogleAccount();
+            if(url) {
+                window.location.href = url;
+            }
+        } catch (err: any) {
+            console.log(err.message);
+        }
+    }
     return (
         <div className="px-6 py-12 lg:px-8">
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
                 <p className='text-center font-bold text-xl mb-10'>{title}</p>
-                <form method="POST" className="flex flex-col gap-4">
+                <form method="POST" className="flex flex-col gap-4 mb-4">
                     <div>
                         <label htmlFor="email" className="text text-sm/6 font-medium text-gray-900">Email address</label>
-                        <input value={email} onChange={e => handleEmailChange(e)} id="email" type="email" name="email" required className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
+                        <input value={email} onChange={e => handleEmailChange(e)} id="email" type="email" name="email" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
                         <p className='text-red-500 h-[12px] text-xs'>{emailErrorMsg}</p>
                     </div>
 
                     <div>
                         <label htmlFor="password" className="text-sm/6 font-medium text-gray-900">Password</label>
-                        <input value={password} onChange={e => handlePasswordChange(e)} id="password" type="password" name="password" required className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
+                        <input value={password} onChange={e => handlePasswordChange(e)} id="password" type="password" name="password" className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6" />
                         <p className='text-red-500 h-[12px] text-xs'>{passwordErrorMsg}</p>
                     </div>
 
-                    <button onClick={(e) => { handleSubmit(e) }} type="submit" className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500">{submitBtnName}</button>
+                    <button onClick={handleSubmit} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500">{submitBtnName}</button>
                 </form>
+
+                <button onClick={handleLoginWithGoogleAccount} className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500">Sign in with Google</button>
             </div>
         </div>
     )
