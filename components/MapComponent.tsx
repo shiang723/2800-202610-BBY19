@@ -324,21 +324,18 @@ export default function MapComponent({ activeFilter }: { activeFilter: string | 
       try {
         shadeInstance.current?.remove?.();
       } catch (e) {
-        // safe to ignore
+        // safe to ignore (?)
       } finally {
         shadeInstance.current = null;
       }
 
-      // Add a slight delay so the shademap can be (hopefully) removed first
-      setTimeout(() => {
-        try {
-          mapInstance.current?.remove();
-        } catch (e) {
-          // safe to ignore
-        } finally {
-          mapInstance.current = null;
-        }
-      }, 300);
+      try {
+        mapInstance.current?.remove();
+      } catch (e) {
+        // safe to ignore (?)
+      } finally {
+        mapInstance.current = null;
+      }
     };
   }, []);
 
