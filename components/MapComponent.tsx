@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
 import { loadYelpData } from "@/lib/yelpLoader";
+import TimeShiftBtns from "./TimeShiftBtns";
 
 const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
@@ -15,14 +16,14 @@ const dataTables = [
     id: "community-centres",
     icon: "community",
     type: "Community Centre",
-    label: "Community Centres",
+    label: "Centres",
   },
   {
     id: "drinking-fountains",
     icon: "fountain",
     minZoom: 14.35,
     type: "Water Fountain",
-    label: "Water Fountains",
+    label: "Fountains",
     filter: (feature: GeoJSON.Feature) =>
       feature.properties?.name.includes("Fountain"),
   },
@@ -36,11 +37,11 @@ const dataTables = [
     filter: (feature: GeoJSON.Feature) =>
       feature.properties?.park_name !== null,
   },
+  { id: "cafes", label: "Cafes", minZoom: 14.35 },
 ];
 
 const bbox: [number, number, number, number] = [
-  -123.30131804763337, 49.00677789167195, -122.41360896119741,
-  49.56344307724677,
+  -123.28753233533254, 49.17524950157297, -122.9801907901657, 49.33148788422633,
 ]; // Vancouver bounding box
 
 function setupSearchbar(map: maplibregl.Map) {
@@ -153,6 +154,8 @@ async function setupCityData(map: maplibregl.Map) {
 
   // Loop through the data tables and add a layer of points for each dataset
   for (const dataSet of dataTables) {
+    if (dataSet.id === "cafes") continue;
+
     const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
     const data = (await fetch(url).then((res) =>
       res.json(),
@@ -262,7 +265,7 @@ async function setupCityData(map: maplibregl.Map) {
 export default function MapComponent({
   activeFilter,
 }: {
-  activeFilter: string | null;
+  activeFilter: string[];
 }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<maplibregl.Map | null>(null);
@@ -275,7 +278,12 @@ export default function MapComponent({
     if (!shadeInstance.current) return;
 
     const tempDate = new Date(dateInstance.current);
-    tempDate.setHours(tempDate.getHours() + hours);
+    if (Math.abs(hours) === 0.5) {
+      tempDate.setMinutes(tempDate.getMinutes() + (hours > 0 ? 30 : -30));
+    } else {
+      tempDate.setHours(tempDate.getHours() + hours);
+    }
+
     dateInstance.current = tempDate;
     shadeInstance.current.setDate(tempDate);
 
@@ -391,14 +399,14 @@ export default function MapComponent({
     if (!map || !map.isStyleLoaded()) return;
 
     for (const dataSet of dataTables) {
-      const selected = activeFilter === null || activeFilter === dataSet.label;
+      const selected = activeFilter?.length === 0 || activeFilter?.includes(dataSet.label);
       if (map.getLayer(dataSet.id)) {
         map.setLayoutProperty(
           dataSet.id,
           "visibility",
           selected ? "visible" : "none",
         );
-        if (activeFilter === dataSet.label) {
+        if (activeFilter.includes(dataSet.label)) {
           map.setLayerZoomRange(dataSet.id, 11.75, 24);
         } else {
           map.setLayerZoomRange(dataSet.id, dataSet.minZoom || 11.75, 24);
@@ -413,25 +421,7 @@ export default function MapComponent({
         ref={mapContainer}
         className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
       />
-      <div className="fixed bottom-25 left-0 right-0 flex justify-center bg-opacity-50 rounded">
-        <div className="flex justify-center">
-          <button
-            onClick={() => changeTime(-1)}
-            className="mx-1 px-3 py-1 bg-white text-black rounded"
-          >
-            -1h
-          </button>
-          <div className="mx-1 px-2 py-1 bg-white text-black rounded">
-            {displayTime}
-          </div>
-          <button
-            onClick={() => changeTime(1)}
-            className="mx-1 px-3 py-1 bg-white text-black rounded"
-          >
-            +1h
-          </button>
-        </div>
-      </div>
+      <TimeShiftBtns displayTime={displayTime} changeTime={changeTime} />
     </div>
   );
 }

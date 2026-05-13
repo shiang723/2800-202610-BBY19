@@ -51,22 +51,22 @@ export async function loadYelpData(
       };
 
       // delete origial file if there is one
-      if (map.getSource("yelp-places")) {
-        map.removeLayer("yelp-places");
-        map.removeSource("yelp-places");
+      if (map.getSource("cafes")) {
+        map.removeLayer("cafes");
+        map.removeSource("cafes");
       }
 
-      map.addSource("yelp-places", {
+      map.addSource("cafes", {
         type: "geojson",
         data: geojson,
       });
 
       // use symbol to the yelp palce without icon
       map.addLayer({
-        id: "yelp-places",
+        id: "cafes",
         type: "symbol",
-        source: "yelp-places",
-        minzoom: 13,
+        source: "cafes",
+        minzoom: 14.35,
         layout: {
           "icon-image": "cafe-icon",
           "icon-size": 0.05,
@@ -74,7 +74,7 @@ export async function loadYelpData(
       });
 
       // click pop up page
-      map.on("click", "yelp-places", (e: any) => {
+      map.on("click", "cafes", (e: any) => {
         if (!e.features || !e.features[0]) return;
         const props = e.features[0].properties;
         const coords = (e.features[0].geometry as any).coordinates;
@@ -95,10 +95,10 @@ export async function loadYelpData(
         new maplibregl.Popup().setLngLat(coords).setHTML(html).addTo(map);
       });
 
-      map.on("mouseenter", "yelp-places", () => {
+      map.on("mouseenter", "cafes", () => {
         map.getCanvas().style.cursor = "pointer";
       });
-      map.on("mouseleave", "yelp-places", () => {
+      map.on("mouseleave", "cafes", () => {
         map.getCanvas().style.cursor = "";
       });
 
