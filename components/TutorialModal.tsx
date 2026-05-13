@@ -1,38 +1,38 @@
-'use client'
+"use client";
 
 import Image from "next/image";
 import { useRef } from "react";
 
 //Props for the Tutorial Modal
 interface TutorialModalProps {
-    id: string;
-    header: string;
-    icon: string;
-    iconHeight?: string;
-    iconWidth?: string;
-    nextLocation?: string;
-    message: string;
-    lastLocation?: string;
-    currStep?: string;
-    numSteps?: string;
-    first?: boolean;
-    last?: boolean;
+  id: string;
+  header: string;
+  icon: string;
+  iconHeight?: string;
+  iconWidth?: string;
+  nextLocation?: string;
+  message: string;
+  lastLocation?: string;
+  currStep?: string;
+  numSteps?: string;
+  first?: boolean;
+  last?: boolean;
 }
 
 //Tutorial Modal used for Welcome Tutorial
 export default function TutorialModal({
-    id,
-    header,
-    icon,
-    iconHeight = "40",
-    iconWidth = "40",
-    nextLocation = "",
-    lastLocation = "",
-    message,
-    currStep = "1",
-    numSteps = "1",
-    first = false,
-    last = false,
+  id,
+  header,
+  icon,
+  iconHeight = "40",
+  iconWidth = "40",
+  nextLocation = "",
+  lastLocation = "",
+  message,
+  currStep = "1",
+  numSteps = "1",
+  first = false,
+  last = false,
 }: TutorialModalProps) {
 
     // Create a reference for the current modal
@@ -54,10 +54,13 @@ export default function TutorialModal({
         lastModal?.showModal();
     }
 
-
-    const backButtonClass = (first) ? " hidden" : "bg-gray-200 hover:bg-gray-300 text-black rounded-lg p-2 pl-4 pr-4";
-    const nextButtonText = (last) ? "Done" : "Next";
-    const skipButtonClass = (last) ? "hidden" : "flex justify-self-end bg-gray-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-gray-500";
+  const backButtonClass = first
+    ? " hidden"
+    : "bg-blue-200 hover:bg-blue-300 text-black rounded-lg p-2 pl-4 pr-4";
+  const nextButtonText = last ? "Done" : "Next";
+  const skipButtonClass = last
+    ? "hidden"
+    : "flex justify-self-end bg-blue-400 text-white rounded-lg p-1 pl-4 pr-4 mb-1 hover:bg-blue-500";
 
     // The HTML layout and elements of the Tutorial Modal.
     return (
