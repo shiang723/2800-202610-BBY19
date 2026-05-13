@@ -13,19 +13,19 @@ export default function Navbar() {
                 <ul className='list-none flex justify-between'>
                     <Link href="/" className="flex justify-items-center">
                         <li className='p-1'>
-                            <Image src="/homeIcon.svg" alt="homeIcon" width={50} height={52} className='place-self-center' />
+                            <Image src="/homeIcon.svg" alt="homeIcon" width={50} height={52} className='place-self-center h-11 w-auto' />
                         </li>
                     </Link>
                     <Link href="/chat" >
                         <li className='p-1'>
-                            <Image src="/chatIcon.svg" alt="chatIcon" width={45} height={47.5} className='place-self-center' />
+                            <Image src="/chatIcon.svg" alt="chatIcon" width={45} height={47.5} className='place-self-center h-11 w-auto' />
                         </li>
                     </Link>
                     <Link href="/profile"><li className='p-1'>
-                        <Image src="/bookmark.svg" alt="profileIcon" width={27} height={40} className='place-self-center' />
+                        <Image src="/bookmark.svg" alt="profileIcon" width={27} height={40} className='place-self-center h-11 w-auto' />
                     </li></Link>
                     <Link href="/notification" className='flex justify-items-center'><li className='p-1'>
-                        <Image src="/bell.svg" alt="bellIcon" width={36} height={45} className='place-self-center' />
+                        <Image src="/bell.svg" alt="bellIcon" width={36} height={45} className='place-self-center h-11 w-auto' />
                     </li></Link>
                 </ul>
             </nav>
