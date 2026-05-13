@@ -9,6 +9,7 @@ export default function WelcomeTutorial({ open }: { open: boolean }) {
             firstModal?.showModal();
         }
     }, [open])
+    
     return (
         <div>
             <TutorialModal

@@ -5,13 +5,13 @@ import { createClientForServerComponent } from '@/lib/supabase/server'
 export async function signUpNewUser(email: string, password: string) {
     const supabase = await createClientForServerComponent();
     const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
+        email,
+        password,
     })
 
-    if(error) {
-    console.log("Signup error" + error.message)
-    return;
+    if (error) {
+        alert(error);
+        throw new Error("Signin error" + error);
     }
 
     return data;
@@ -20,23 +20,44 @@ export async function signUpNewUser(email: string, password: string) {
 export async function signInWithEmail(email: string, password: string) {
     const supabase = await createClientForServerComponent();
     const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+        email,
+        password,
     })
 
-    if(error) {
-    console.log("Signin error" + error.message)
-    return;
+    if (error) {
+        alert(error);
+        throw new Error("Signin error" + error);
     }
 
     return data;
+}
+
+export async function signInWithGoogleAccount() {
+    const supabase = await createClientForServerComponent();
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: `http://localhost:3000/auth/callback`,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+            },
+        },
+    })
+
+    if (error) {
+        alert(error);
+        throw new Error("Signin error" + error);
+    }
+
+    return data.url;
 }
 
 export async function signOut() {
     const supabase = await createClientForServerComponent();
     const { error } = await supabase.auth.signOut()
 
-    if(error) {
+    if (error) {
         console.log("Signin error" + error.message)
     }
 }

@@ -6,7 +6,7 @@ export default function SignoutBtn({userEmail} : {userEmail: string | undefined}
             onClick={signOut}
             className={
                 userEmail
-                    ? "p-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+                    ? "p-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors absolute z-100 bottom-40 right-0"
                     : "hidden"
             }
         >

@@ -1,4 +1,5 @@
 'use client'
+
 import AuthenticationComponent from "@/components/AuthenticationComponent"
 import { signInWithEmail } from "@/actions/auth"
 
