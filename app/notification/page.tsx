@@ -2,11 +2,13 @@ import Navbar from "@/components/Navbar";
 import Notification from "@/components/Notification";
 
 export default function NotificationPage() {
+    const now = new Date();
     return (
         <div>
-            <button command="show-modal" commandfor="notification" className="text-black">Click Here</button>
-            <Notification type="uv" uvIndex={12} />
+            <Notification type="sunscreen" timeOfNotif={now} />
+            <div id="notification-menu">
+            </div>
             <Navbar />
         </div>
     );
-}
+};
