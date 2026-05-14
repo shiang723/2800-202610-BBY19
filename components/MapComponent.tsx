@@ -184,9 +184,12 @@ async function setupCityData(map: maplibregl.Map) {
         : data.features,
     };
 
-    const image = await map.loadImage("/" + dataSet.icon + ".png");
 
-    map.addImage(dataSet.id, image.data);
+
+    if (dataSet.icon) {
+      const image = await map.loadImage("/" + dataSet.icon + ".png");
+      map.addImage(dataSet.id, image.data);
+    }
 
     map.addSource(dataSet.id, {
       type: "geojson",

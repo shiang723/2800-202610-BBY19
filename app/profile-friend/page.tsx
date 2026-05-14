@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { supabase } from "@/lib/supabase/client";
+import { createClientForClientComponent } from "@/lib/supabase/client";
 import {
   ArrowLeft,
   LogOut,
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+const supabase = createClientForClientComponent();
 
 type SupabaseUserFriend = {
   id: string;
@@ -173,7 +175,7 @@ export default function Profile() {
                 <User size={24} className="mr-3" />
               </span>
               <p className="flex-1">
-                {user?.user_metadata?.aboutMe || "Write something about you"}
+                {user?.user_metadata?.aboutMe as string || "Write something about you"}
               </p>
             </div>
 

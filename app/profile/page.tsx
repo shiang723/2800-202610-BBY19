@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { supabase } from "@/lib/supabase/client";
+import { createClientForClientComponent } from "@/lib/supabase/client";
 import {
   ArrowLeft,
   LogOut,
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+const supabase = createClientForClientComponent();
 
 type SupabaseUser= {
   id: string;

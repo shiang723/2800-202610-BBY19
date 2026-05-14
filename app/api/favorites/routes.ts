@@ -1,10 +1,10 @@
 // app/api/favorites/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClientForServerComponent } from "@/lib/supabase/server";
 
 // GET - get collection list
 export async function GET() {
-  const supabase = await createClient();
+  const supabase = await createClientForServerComponent();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -28,7 +28,7 @@ export async function GET() {
 
 // POST - add collection
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const supabase = await createClientForServerComponent();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
 // DELETE - collectio
 export async function DELETE(request: Request) {
-  const supabase = await createClient();
+  const supabase = await createClientForServerComponent();
   const {
     data: { session },
   } = await supabase.auth.getSession();
