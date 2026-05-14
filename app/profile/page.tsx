@@ -3,13 +3,13 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { createClient } from "@/lib/supabase/client";
+import { createClientForClientComponent } from "@/lib/supabase/client";
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = createClientForClientComponent();
 
   // user information
   useEffect(() => {
