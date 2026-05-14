@@ -10,7 +10,6 @@ export default function LoginPage() {
   return (
     <AuthenticationComponent
       submitBtnName="Sign in"
-      successMessage="Congratulations! You are logged in"
       authFunction={signInWithEmail}
     />
   );

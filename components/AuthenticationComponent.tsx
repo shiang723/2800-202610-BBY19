@@ -27,6 +27,7 @@ const passwordRegex =
 interface AuthenticationComponentProps {
   submitBtnName: string;
   authFunction: (email: string, password: string) => Promise<{isError:boolean, message:string}>;
+  
 }
 
 export default function AuthenticationComponent({
@@ -100,7 +101,7 @@ export default function AuthenticationComponent({
 
     try {
       const data = await authFunction(email, password);
-
+      
       alert(data.message);
 
       if (!data.isError && submitBtnName == "Sign in") {
