@@ -4,16 +4,19 @@ import { createClientForServerComponent } from '@/lib/supabase/server'
 
 export async function signUpNewUser(email: string, password: string) {
     const supabase = await createClientForServerComponent();
+    console.log(email, password)
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+            emailRedirectTo: '/',
+        }
     })
 
     if (error) {
-        alert(error);
         throw new Error("Signin error" + error);
     }
-
+    console.log(data);
     return data;
 }
 
@@ -25,7 +28,6 @@ export async function signInWithEmail(email: string, password: string) {
     })
 
     if (error) {
-        alert(error);
         throw new Error("Signin error" + error);
     }
 

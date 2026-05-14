@@ -86,7 +86,8 @@ export default function AuthenticationComponent({
   }
 
   // Function hanldes submitting user crendentials
-  async function handleSubmit() {
+  async function handleSubmit(e:React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+    e.preventDefault();
     if (!email) {
       alert("Please provide email!");
       return;
@@ -104,8 +105,8 @@ export default function AuthenticationComponent({
 
     try {
       await authFunction(email, password);
-      alert(successMessage);
-      router.push(redirectPath);
+    //   alert(successMessage);
+    //   router.push(redirectPath);
     } catch (err: any) {
       console.log(err.message);
     } finally {
@@ -190,7 +191,7 @@ export default function AuthenticationComponent({
           </div>
 
           <button
-            onClick={handleSubmit}
+            onClick={(e)=>{handleSubmit(e)}}
             className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white"
           >
             {submitBtnName}
