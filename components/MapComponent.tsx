@@ -291,6 +291,7 @@ export default function MapComponent({
   const dateInstance = useRef<Date>(new Date());
 
   const [displayTime, setDisplayTime] = useState("");
+  const [weatherData, setWeatherData] = useState<{ temp: number; uv: number } | null>(null);
 
   const changeTime = (hours: number) => {
     if (!shadeInstance.current) return;
@@ -323,6 +324,24 @@ export default function MapComponent({
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+  const fetchWeather = async () => {
+    const key = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
+    // Vancouver coordinates
+    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=49.2827&lon=-123.1207&units=metric&appid=${key}`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setWeatherData({ temp: data.current.temp, uv: data.current.uvi });
+      console.log("Weather data loaded successfully");
+    } catch (e) {
+      console.error("Weather Fetch Error:", e);
+    }
+  };
+  fetchWeather();
+}, []);
 
   useEffect(() => {
     let mapMounted = true;
