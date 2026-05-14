@@ -52,7 +52,7 @@ export default function Chat() {
                   A
                 </div>
                 <Link
-                  href="/message"
+                  href="/profile-friend"
                   className="flex items-center px-4 py-2 hover:bg-gray-100 transition-colors"
                   onClick={() => setOpen(false)}
                 >
@@ -68,7 +68,7 @@ export default function Chat() {
                   <span className="ml-2 text-gray-800 text-sm">Anna White</span>
                 </Link>
                 <Link
-                  href="/message"
+                  href="/profile-friend"
                   className="flex items-center px-4 py-2 hover:bg-gray-100 transition-colors"
                   onClick={() => setOpen(false)}
                 >
@@ -87,7 +87,7 @@ export default function Chat() {
                   B
                 </div>
                 <Link
-                  href="/message"
+                  href="/profile-friend"
                   className="flex items-center px-4 py-2 hover:bg-gray-100 transition-colors"
                   onClick={() => setOpen(false)}
                 >

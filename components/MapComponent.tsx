@@ -86,10 +86,13 @@ function setupSearchbar(map: maplibregl.Map) {
   document
     .querySelector("maptiler-geocoder-feature-item")
     ?.shadowRoot?.appendChild(searchDropdownStyle);
-};
+}
 
-function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<ShadeMap | null>, dateInstance: React.RefObject<Date>) {
-
+function setupShadeMap(
+  map: maplibregl.Map,
+  shadeInstance: React.RefObject<ShadeMap | null>,
+  dateInstance: React.RefObject<Date>,
+) {
   const sources = map.getStyle().sources;
   const buildingSource = "maptiler_planet_v4";
   const styleLayers = map.getStyle().layers;
@@ -125,19 +128,20 @@ function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<Shade
     opacity: 0.7, // opacity of shade color
     apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
     getFeatures: async () => {
-          const buildings = map.queryRenderedFeatures({ layers: ['3d-buildings'] });
-          return buildings.map(building => {
-            const buildingHeight = building.properties.render_height || building.properties.height || 10;
-            return {
-              type: "Feature",
-              geometry: building.geometry,
-              properties: {
-              height: buildingHeight,
-              render_height: buildingHeight
-              }
-            };
-          });
-        },
+      const buildings = map.queryRenderedFeatures({ layers: ["3d-buildings"] });
+      return buildings.map((building) => {
+        const buildingHeight =
+          building.properties.render_height || building.properties.height || 10;
+        return {
+          type: "Feature",
+          geometry: building.geometry,
+          properties: {
+            height: buildingHeight,
+            render_height: buildingHeight,
+          },
+        };
+      });
+    },
     // terrainSource: {
     //   tileSize: 256, // DEM tile size
     //   maxZoom: 15, // Maximum zoom of DEM tile set
@@ -161,13 +165,12 @@ function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<Shade
     intensity: 0.4,
     position: [1, 210, 30],
   });
-};
+}
 
 async function setupCityData(map: maplibregl.Map) {
-
   // Loop through the data tables and add a layer of points for each dataset
   for (const dataSet of dataTables) {
-    if (dataSet.id === "cafes") continue;
+    // if (dataSet.id === "cafes") continue;
 
     const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
     const data = (await fetch(url).then((res) =>
@@ -270,10 +273,8 @@ async function setupCityData(map: maplibregl.Map) {
     map.on("mouseleave", dataSet.id, () => {
       map.getCanvas().style.cursor = "";
     });
-
   }
-};
-
+}
 
 export default function MapComponent({
   activeFilter,
@@ -352,7 +353,6 @@ export default function MapComponent({
 
           // Center map on user
           map.flyTo({ center: [longitude, latitude], zoom: 15 });
-
         },
         (err) => console.error("Location error:", err),
         { enableHighAccuracy: true },
@@ -371,18 +371,12 @@ export default function MapComponent({
 
       // map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
-
-
       setDisplayTime(dateInstance.current.toLocaleTimeString());
 
       setupSearchbar(map);
       setupShadeMap(map, shadeInstance, dateInstance);
       setupCityData(map);
       // loadYelpData(latitude, longitude, map);
-
-
-
-
     });
 
     return () => {
@@ -402,8 +396,6 @@ export default function MapComponent({
         shadeInstance.current = null;
         mapInstance.current = null;
       }
-
-
     };
   }, []);
 
@@ -412,7 +404,8 @@ export default function MapComponent({
     if (!map || !map.isStyleLoaded()) return;
 
     for (const dataSet of dataTables) {
-      const selected = activeFilter?.length === 0 || activeFilter?.includes(dataSet.label);
+      const selected =
+        activeFilter?.length === 0 || activeFilter?.includes(dataSet.label);
       if (map.getLayer(dataSet.id)) {
         map.setLayoutProperty(
           dataSet.id,

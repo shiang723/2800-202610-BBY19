@@ -1,8 +1,12 @@
-'use client'
-import AuthenticationComponent from "@/components/AuthenticationComponent"
-import { signInWithEmail } from "@/actions/auth"
+"use client";
+
+import AuthenticationComponent from "@/components/AuthenticationComponent";
+import { signInWithEmail } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   return (
     <AuthenticationComponent
       title="Log in Vancooler account"
@@ -10,5 +14,5 @@ export default function LoginPage() {
       successMessage="Congratulations! You are logged in"
       authFunction={signInWithEmail}
     />
-  )
+  );
 }
