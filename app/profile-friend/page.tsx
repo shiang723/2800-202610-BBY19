@@ -10,12 +10,13 @@ import {
   Settings,
   User,
   HelpCircle,
+  MessageCircle,
   Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-type SupabaseUser= {
+type SupabaseUserFriend = {
   id: string;
   email: string | null;
   user_metadata?: {
@@ -26,22 +27,30 @@ type SupabaseUser= {
   [key: string]: unknown;
 };
 
-type FavoriteLocation = {
-  id: string;
-  place_id: string;
-  place_name: string;
-  place_address?: string;
-  place_rating?: number;
-};
-
 export default function Profile() {
+  const [user, setUser] = useState<SupabaseUserFriend | null>(null);
+  type FavoriteLocation = {
+    id: string;
+    place_id: string;
+    place_name: string;
+    place_address?: string;
+    place_rating?: number;
+  };
 
-  const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
+  };
+
+  const handleOpenTutorial = () => {
+    const modal = document.getElementById("tutorialmodel") as HTMLDialogElement;
+    modal?.showModal();
+  };
+
+  const handleMessage = () => {
+    router.push("/message");
   };
 
   const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
@@ -88,6 +97,10 @@ export default function Profile() {
     fetchData();
   }, []);
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   const handleRemoveFavorite = async (placeId: string, placeName: string) => {
     if (!confirm(`Remove "${placeName}" from your favorites?`)) return;
 
@@ -96,14 +109,12 @@ export default function Profile() {
     });
     const data = await response.json();
     if (data.success) {
-      fetchFavorites(); // refreash the list
+      fetchFavorites();
     }
   };
 
-  // get dispay name
-  const displayName = user
-    ? user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
-    : "User";
+  const displayName =
+    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
 
   return (
     <main className="bg-gray-100 min-h-screen pb-24">
@@ -118,28 +129,35 @@ export default function Profile() {
           <h1 className="text-lg font-semibold text-gray-800">My Profile</h1>
         </div>
 
-        {/* <button
-          onClick={handleBack}
-          className="bg-gray-400 rounded-2xl p-1 pl-2 pr-2 text-lg flex place-self-end-safe"
-        >
-          Back
-        </button> */}
-
-        {/* user information - dyanamic infor from Supabase */}
+        {/* user information */}
         <div className="bg-white rounded-xl p-6 text-center mb-4 shadow">
-          <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-gray-200 "></div>
+          <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-gray-200"></div>
           <h2 className="mt-3 text-xl font-bold text-gray-800">
             {displayName}
           </h2>
-          {/* Age can get age */}
           <div className="flex justify-center items-center gap-1 mt-1 text-gray-500 text-sm">
             <span className="text-gray-500 text-m">Age:</span>
             <p>{user?.user_metadata?.age || "Not set"}</p>
           </div>
+          <div className="flex gap-3 mt-4">
+            <button className="flex-6 bg-blue-500 text-white font-semibold py-2 px-4 rounded-full hover:bg-blue-600 transition-colors">
+              Follow
+            </button>
+            {/* <button className="flex-1 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors">
+              Message
+            </button> */}
+
+            <button
+              onClick={handleMessage}
+              className="bg-gray-200 items-center text-gray-700 font-semibold py-2 px-4 rounded-full hover:bg-gray-300 transition-colors"
+            >
+              <MessageCircle size={24} className="mr-3" />
+            </button>
+          </div>
         </div>
 
-        {/* user information - dyanamic infor from Supabase */}
-        <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700 ">
+        {/* user details */}
+        <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700">
           <div className="space-y-3">
             {/* Email */}
             <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
@@ -155,31 +173,34 @@ export default function Profile() {
                 <User size={24} className="mr-3" />
               </span>
               <p className="flex-1">
-                {typeof user?.user_metadata?.aboutMe === "string" &&
-                user.user_metadata.aboutMe.trim()
-                  ? user.user_metadata.aboutMe
-                  : "Write something about you"}
+                {user?.user_metadata?.aboutMe || "Write something about you"}
               </p>
             </div>
 
             {/* Settings */}
             <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
-                <Settings size={24} className="mr-3" />
-              </span>
-              <p>Account Settings</p>
+              <Link href="/settings" className="flex items-center flex-1">
+                <span className="font-semibold min-w-[60px]">
+                  <Settings size={24} className="mr-3" />
+                </span>
+                <p>Account Settings</p>
+              </Link>
             </div>
 
             {/* help */}
-            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
+            <div className="flex items-center border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+              <button
+                onClick={handleOpenTutorial}
+                className=" flex items-center gap-6"
+              >
                 <HelpCircle size={24} className="mr-3" />
-              </span>
-              <p>Tutorial</p>
+                <p>Tutorial</p>
+              </button>
             </div>
           </div>
         </div>
 
+        {/* Sign Out Button */}
         <div className="mt-4 bg-white rounded-xl overflow-hidden shadow">
           <button
             onClick={handleSignOut}
@@ -190,7 +211,7 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* collect the location from api*/}
+        {/* Saved Locations */}
         <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
           Saved Locations
         </p>
@@ -224,7 +245,9 @@ export default function Profile() {
                   handleRemoveFavorite(location.place_id, location.place_name)
                 }
                 className="bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors"
-              ></button>
+              >
+                ×
+              </button>
             </div>
           ))
         )}

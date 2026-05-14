@@ -1,9 +1,12 @@
-'use client'
+"use client";
 
-import AuthenticationComponent from "@/components/AuthenticationComponent"
-import { signInWithEmail } from "@/actions/auth"
+import AuthenticationComponent from "@/components/AuthenticationComponent";
+import { signInWithEmail } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   return (
     <AuthenticationComponent
       title="Log in"
@@ -12,5 +15,5 @@ export default function LoginPage() {
       redirectPath="/"
       authFunction={signInWithEmail}
     />
-  )
+  );
 }
