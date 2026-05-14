@@ -4,7 +4,7 @@ import { UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createClientForClientComponent } from "@/lib/supabase/client";
 
 interface ProfileIconProps {
   size?: number;
@@ -18,6 +18,7 @@ export default function ProfileIcon() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const supabase = createClientForClientComponent();
   useEffect(() => {
     const getUser = async () => {
       const {
