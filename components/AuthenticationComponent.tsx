@@ -100,6 +100,7 @@ export default function AuthenticationComponent({
     }
 
     try {
+      console.log(authFunction);
       const data = await authFunction(email, password);
       
       alert(data.message);
