@@ -24,7 +24,6 @@ const passwordRegex =
   /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$/;
 
 interface AuthenticationComponentProps {
-  title: string;
   submitBtnName: string;
   authFunction: (email: string, password: string) => Promise<unknown>;
   successMessage: string;
@@ -83,7 +82,7 @@ export default function AuthenticationComponent({
   }
 
   // Function hanldes submitting user crendentials
-  async function handleSubmit(e:React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+  async function handleSubmit(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.preventDefault();
     if (!email) {
       alert("Please provide email!");
@@ -104,7 +103,7 @@ export default function AuthenticationComponent({
       await authFunction(email, password);
       alert(successMessage);
 
-      if(submitBtnName == "Sign in") {
+      if (submitBtnName == "Sign in") {
         router.push("/");
       }
     } catch (err: any) {
@@ -128,6 +127,7 @@ export default function AuthenticationComponent({
       console.log(err.message);
     }
   }
+
   return (
     <div className="px-6 py-12 lg:px-8 min-h-screen dark:bg-[#283857] flex items-top justify-center ">
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
@@ -191,7 +191,7 @@ export default function AuthenticationComponent({
           </div>
 
           <button
-            onClick={(e)=>{handleSubmit(e)}}
+            onClick={(e) => { handleSubmit(e) }}
             className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white"
           >
             {submitBtnName}

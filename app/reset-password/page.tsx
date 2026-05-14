@@ -3,63 +3,62 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { updatePassword } from "@/actions/auth";
+import { resetPassword } from "@/actions/auth";
 
-/* password must contain 1 number (0-9)
-password must contain 1 uppercase letters
-password must contain 1 lowercase letters
-password must contain 1 non-alpha numeric number
-password is 8-16 characters with no space
+/*
+The email couldn't start or finish with a dot
+The email shouldn't contain spaces into the string
+The email shouldn't contain special chars (<:, *,ecc)
+The email could contain dots in the middle of mail address before the @
+The email could contain a double doman ( '.de.org' or similar rarity)
 */
-const passwordRegex =
-  /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$/;
+const emailRegex = /^((?!\.)[\w-_.]*[^.])(@\w+)(\.\w+(\.\w+)?[^.\W])$/i;
 
 export default function AuthenticationComponent() {
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [passwordErrorMsg, setPasswordErrorMsg] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [emailErrorMsg, setEmailErrorMsg] = useState<string>("");
   const router = useRouter();
 
-  // Delete error messages if password or email is empty
+  // Delete error messages if email is empty
   useEffect(() => {
-    if (!newPassword) {
-      setPasswordErrorMsg("");
+    if (!email) {
+      setEmailErrorMsg("");
     }
-  }, [newPassword]);
+  }, [email]);
 
-  // Function handles password change
-  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const password = e.target.value;
+  // Function handles email change
+  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const email = e.target.value;
 
-    if (!passwordRegex.test(password)) {
-      if (!passwordErrorMsg) {
-        setPasswordErrorMsg("Invalid Password");
+    if (!emailRegex.test(email)) {
+      if (!emailErrorMsg) {
+        setEmailErrorMsg("Invalid Email");
       }
     } else {
-      setPasswordErrorMsg("");
+      setEmailErrorMsg("");
     }
 
-    setNewPassword(password);
+    setEmail(email);
   }
 
-  // Function hanldes submitting user crendentials
-  async function handleSubmit(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+  // Function handles reseting the password
+  async function handleResetPassword(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-
-    if (!newPassword) {
-      alert("Please provide password");
+    
+    if (!email) {
+      alert("Please provide email to reset your password!");
       return;
     }
 
     try {
-      await updatePassword(newPassword);
-      alert("You password has been changed!");
-
-      router.push("/");
+      await resetPassword(email);
+      alert("Please check your email for the password reset link");
+      router.push("login");
     } catch (err: any) {
       console.log(err.message);
     } finally {
-      setNewPassword("");
-      setPasswordErrorMsg("");
+        setEmail("");
+        setEmailErrorMsg("");
     }
   }
 
@@ -84,32 +83,34 @@ export default function AuthenticationComponent() {
           />
         </div>
 
+        <h2>Please provide your email so we can send the password reset link to it</h2>
+
         <form method="POST" className="flex flex-col gap-4 mb-4">
           <div>
             <label
-              htmlFor="password"
+              htmlFor="email"
               className="text-sm/6 font-medium text-gray-900 dark:text-white"
             >
-              Password
+              Email
             </label>
             <input
-              value={newPassword}
-              onChange={(e) => handlePasswordChange(e)}
-              id="password"
-              type="password"
-              name="password"
+              value={email}
+              onChange={(e) => handleEmailChange(e)}
+              id="email"
+              type="email"
+              name="email"
               className="w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:outline-blue-500 sm:text-sm/6 mt-1"
             />
             <p className="text-red-500 h-[12px] text-xs mt-1">
-              {passwordErrorMsg}
+              {emailErrorMsg}
             </p>
           </div>
 
           <button
-            onClick={(e) => { handleSubmit(e) }}
+            onClick={(e) => {handleResetPassword(e)}}
             className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white"
           >
-            Set new password
+            Send password reset link
           </button>
         </form>
       </div>
