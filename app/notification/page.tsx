@@ -1,189 +1,168 @@
 'use client'
 import Navbar from "@/components/Navbar";
+import Notification from "@/components/Notification";
 import Link from "next/link";
 import { useState } from "react";
 
 const json = `[
         {
-        "type": "sunscreen"
+        "type": "sunscreen",
          "on": true,
          "startTime":"",
          "endTime":"",
-         "interval": 2
-
+         "interval": 2,
+         "nextNotifTime": ""
         },
          {
-        "type": "uv"
+        "type": "uv",
        "on": true,
        "startTime":"",
          "endTime":"",
          "interval": 1
        },
         {
-        "type": "hydration"
+        "type": "hydration",
        "on":true,
         "startTime":"",
          "endTime":"",
          "interval": 0.5
        },
          {
-        "type": "message"
+        "type": "message",
          "on": true}]`
 
 
 
-// interface NotificationSetting {
-//     type: "sunscreen" | "uv" | "hydration" | "message";
-//     on: boolean;
-//     startTime?: string;
-//     endTime?: string;
-//     interval?: number;
-// }
+interface NotificationSetting {
+    type: "sunscreen" | "uv" | "hydration" | "message";
+    on: boolean;
+    startTime?: string;
+    endTime?: string;
+    interval?: number;
+    nextNotifTime?: Date
+}
 
-const jsonData: NotificationSetting = JSON.parse(json);
+const jsonData: NotificationSetting[] = JSON.parse(json);
 
 export default function NotificationPage() {
     const now = new Date();
-    const [sunscreenStartTime, setSunscreenStartTime] = useState((jsonData.sunscreenNotif.startTime));
-    const [sunscreenInterval, setSunscreenInterval] = useState((jsonData.sunscreenNotif.interval));
-    const [sunscreenEndTime, setSunscreenEndTime] = useState((jsonData.sunscreenNotif.endTime));
-    const [sunscreenOn, setSunscreenOn] = useState(jsonData.sunscreenNotif.on);
+    /**
+     * How can I combine or simplify the 13 useStates to make the code more readable
+     * Adapted code from Gemini 3 fast
+     * https://gemini.google.com/app
+     */
+    const [settings, setSettings] = useState<NotificationSetting[]>(jsonData);
 
-    const [uvStartTime, setUVStartTime] = useState((jsonData.uvNotif.startTime));
-    const [uvInterval, setUVInterval] = useState((jsonData.uvNotif.interval));
-    const [uvEndTime, setUVEndTime] = useState((jsonData.uvNotif.endTime));
-    const [uvOn, setUVOn] = useState(jsonData.uvNotif.on);
+    function updateSetting(type: NotificationSetting["type"], field: keyof NotificationSetting, value: string | number | boolean) {
+        setSettings((currentSettings) => {
+            return currentSettings.map((item) => {
+                if (item.type !== type) return item;
+                const updatedSetting = { ...item, [field]: value };
+                if (updatedSetting.startTime && updatedSetting.endTime && updatedSetting.interval) {
+                    const startDate = new Date(updatedSetting.startTime);
+                    const endDate = new Date(updatedSetting.endTime);
 
+                    const nextDate = new Date(startDate.getTime());
+                    const hoursToMilliseconds = updatedSetting.interval * 60 * 60 * 1000;
+                    nextDate.setTime(nextDate.getTime() + hoursToMilliseconds);
 
-    const [hydrationStartTime, sethydrationStartTime] = useState((jsonData.hydrationNotif.startTime));
-    const [hydrationInterval, setHydrationInterval] = useState((jsonData.hydrationNotif.interval));
-    const [hydrationEndTime, setHydrationEndTime] = useState((jsonData.hydrationNotif.endTime));
-    const [hydrationOn, setHydrationOn] = useState((jsonData.hydrationNotif.on));
-
-    const [messageOn, setMessageOn] = useState(jsonData.messageNotif.on);
-
-    function updateStartTime(newTime: string, type: string) {
-        if (type === "sunscreen") {
-            jsonData.sunscreenNotif.startTime = newTime;
-            setSunscreenStartTime(newTime);
-        } else if (type === "uv") {
-            jsonData.uvNotif.startTime = newTime;
-            setUVStartTime(newTime);
-        } else if (type === "hydration") {
-            jsonData.hydrationNotif.startTime = newTime;
-            sethydrationStartTime(newTime);
-        }
+                    if (nextDate <= endDate) {
+                        updatedSetting.nextNotifTime = nextDate;
+                    }
+                }
+                return updatedSetting;
+            })
+        })
     }
 
-    function updateEndTime(newTime: string, type: string) {
-        if (type === "sunscreen") {
-            jsonData.sunscreenNotif.endTime = newTime;
-            setSunscreenEndTime(newTime);
-        } else if (type === "uv") {
-            jsonData.uvNotif.endTime = newTime;
-            setUVEndTime(newTime);
-        } else if (type === "hydration") {
-            jsonData.hydrationNotif.endTime = newTime;
-            setHydrationEndTime(newTime);
-        }
-    }
+    function getNotif(type: NotificationSetting["type"]): NotificationSetting {
+        return settings.find(function (item) {
+            return item.type === type;
+        }) || { type, on: false };
+    };
 
-    function updateInterval(newInterval: number, type: string) {
-        if (type === "sunscreen") {
-            jsonData.sunscreenNotif.interval = newInterval;
-            setSunscreenInterval(newInterval);
-        } else if (type === "uv") {
-            jsonData.uvNotif.interval = newInterval;
-            setUVInterval(newInterval);
-        } else if (type === "hydration") {
-            jsonData.hydrationNotif.interval = newInterval;
-            setHydrationInterval(newInterval);
-        }
-    }
+    const sunscreen = getNotif("sunscreen");
+    const uv = getNotif("uv");
+    const hydration = getNotif("hydration");
+    const message = getNotif("message");
+    /*End of adapted code. */
 
-    function updateSettingToggle(newStatus: boolean, type: string) {
-        if (type === "sunscreen") {
-            jsonData.sunscreenNotif.on = newStatus;
-            setSunscreenOn(newStatus);
-        } else if (type === "uv") {
-            jsonData.uvNotif.on = newStatus;
-            setUVOn(newStatus);
-        } else if (type === "hydration") {
-            jsonData.hydrationNotif.on = newStatus;
-            setHydrationOn(newStatus);
-        } else if (type === "message") {
-            jsonData.messageNotif.on = newStatus;
-            setMessageOn(newStatus);
-        }
-    }
     return (
-        <div>
+        <div>{(sunscreen.nextNotifTime && sunscreen.on) && (
+            <Notification type="sunscreen" timeOfNotif={sunscreen.nextNotifTime} />
+        )}
+            {(uv.nextNotifTime && uv.on) && (
+                <Notification type="uv" uvIndex={3} timeOfNotif={uv.nextNotifTime} />
+            )}
+            {(hydration.nextNotifTime && hydration.on) && (
+                <Notification type="hydration" timeOfNotif={uv.nextNotifTime} />
+            )}
             <div id="notification-menu">
                 <div>
                     <label htmlFor="sunscreenNotif">Sunscreen notification</label>
                     <input type="checkbox" id="sunscreenNotif"
-                        checked={sunscreenOn}
-                        onChange={(e) => updateSettingToggle(e.target.checked, "sunscreen")} />
+                        checked={sunscreen.on}
+                        onChange={(e) => updateSetting("sunscreen", "on", e.target.checked)} />
                     <div>
                         <label htmlFor="startTimeSun">Select Start Time:</label>
                         <input type="datetime-local" id="startTimeSun" min={String(now)}
-                            value={sunscreenStartTime}
-                            onChange={(e) => updateStartTime(e.target.value, "sunscreen")} />
+                            value={sunscreen.startTime}
+                            onChange={(e) => updateSetting("sunscreen", "startTime", e.target.value)} />
                         <label htmlFor="endTimeSun">Select End Time:</label>
                         <input type="datetime-local" id="endTimeSun" min={String(now)}
-                            value={sunscreenEndTime}
-                            onChange={(e) => updateEndTime(e.target.value, "sunscreen")} />
+                            value={sunscreen.endTime}
+                            onChange={(e) => updateSetting("sunscreen", "endTime", e.target.value)} />
                         <label htmlFor="hourGapSun">Choose the hourly interval (recommended every 2 hours):</label>
-                        <input type="number" id="hourGapSun" value={sunscreenInterval} max={24} min={1} step={1}
-                            onChange={(e) => updateInterval(Number(e.target.value), "sunscreen")} />
+                        <input type="number" id="hourGapSun" value={sunscreen.interval} max={24} min={1} step={1}
+                            onChange={(e) => updateSetting("sunscreen", "interval", Number(e.target.value))} />
                     </div>
                 </div>
                 <div>
                     <label htmlFor="uvNotif">UV notification</label>
                     <input type="checkbox" id="uvNotif"
-                        checked={uvOn}
-                        onChange={(e) => updateSettingToggle(e.target.checked, "uv")}
+                        checked={uv.on}
+                        onChange={(e) => updateSetting("uv", "on", e.target.checked)}
                     />
                     <div>
                         <label htmlFor="startTimeUV">Select Start Time:</label>
                         <input type="datetime-local" id="startTimeUV" min={String(now)}
-                            value={uvStartTime}
-                            onChange={(e) => updateStartTime(e.target.value, "uv")} />
+                            value={uv.startTime}
+                            onChange={(e) => updateSetting("uv", "startTime", e.target.value)} />
                         <label htmlFor="endTimeUV">Select End Time:</label>
                         <input type="datetime-local" id="endTimeUV" min={String(now)}
-                            value={uvEndTime}
-                            onChange={(e) => updateEndTime(e.target.value, "uv")} />
+                            value={uv.endTime}
+                            onChange={(e) => updateSetting("uv", "endTime", e.target.value)} />
                         <label htmlFor="hourGapUV">Choose the hourly interval between each notification:</label>
                         <input type="number" id="hourGapUV" max={24} min={1} step={1}
-                            value={uvInterval}
-                            onChange={(e) => updateInterval(Number(e.target.value), "uv")} />
+                            value={uv.interval}
+                            onChange={(e) => updateSetting("uv", "interval", Number(e.target.value))} />
                     </div>
                 </div>
                 <div>
                     <label htmlFor="hydrationNotif">Hyrdration notification</label>
                     <input type="checkbox" id="hydrationNotif"
-                        checked={hydrationOn}
-                        onChange={(e) => updateSettingToggle(e.target.checked, "hydration")} />
+                        checked={hydration.on}
+                        onChange={(e) => updateSetting("hydration", "on", e.target.checked)} />
                     <div>
                         <label htmlFor="startTimeH">Select Start Time:</label>
                         <input type="datetime-local" id="startTimeH" min={String(now)}
-                            value={hydrationStartTime}
-                            onChange={(e) => updateStartTime(e.target.value, "hydration")} />
+                            value={hydration.startTime}
+                            onChange={(e) => updateSetting("hydration", "startTime", e.target.value,)} />
                         <label htmlFor="endTimeH">Select End Time:</label>
                         <input type="datetime-local" id="endTimeH" min={String(now)}
-                            value={hydrationEndTime}
-                            onChange={(e) => updateEndTime(e.target.value, "hydration")} />
+                            value={hydration.endTime}
+                            onChange={(e) => updateSetting("hydration", "endTime", e.target.value,)} />
                         <label htmlFor="timeGap">Choose the time interval between notification (hours):</label>
                         <input type="number" id="timeGap" max={24} min={0.5} step={0.5}
-                            value={hydrationInterval}
-                            onChange={(e) => updateInterval(Number(e.target.value), "hydration")} />
+                            value={hydration.interval}
+                            onChange={(e) => updateSetting("hydration", "interval", Number(e.target.value))} />
                     </div>
                 </div>
                 <div>
                     <label htmlFor="messageNotif">Message notification</label>
                     <input type="checkbox" id="messageNotif"
-                        checked={messageOn}
-                        onChange={(e) => updateSettingToggle(e.target.checked, "message")} />
+                        checked={message.on}
+                        onChange={(e) => updateSetting("message", "on", e.target.checked)} />
                 </div>
                 <div>
                     <Link href="#"><h2>Notification History</h2></Link>
