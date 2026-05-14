@@ -28,14 +28,11 @@ interface AuthenticationComponentProps {
   submitBtnName: string;
   authFunction: (email: string, password: string) => Promise<unknown>;
   successMessage: string;
-  redirectPath: string;
 }
 
 export default function AuthenticationComponent({
-  title,
   submitBtnName,
   successMessage,
-  redirectPath,
   authFunction,
 }: AuthenticationComponentProps) {
   const [email, setEmail] = useState<string>("");
@@ -105,8 +102,11 @@ export default function AuthenticationComponent({
 
     try {
       await authFunction(email, password);
-    //   alert(successMessage);
-    //   router.push(redirectPath);
+      alert(successMessage);
+
+      if(submitBtnName == "Sign in") {
+        router.push("/");
+      }
     } catch (err: any) {
       console.log(err.message);
     } finally {
