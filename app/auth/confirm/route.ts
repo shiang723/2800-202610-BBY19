@@ -8,8 +8,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
-  const next = searchParams.get('next') ?? '/'
-  const redirectTo = request.nextUrl.clone()
+  let next = searchParams.get('next') ?? '/'
+  const redirectTo = request.nextUrl.clone();
+
+  // Handle next url parameter in case it holds the full path instead of just the route segment
+  if(next.startsWith("http")) {
+    const nextUrl = new URL(next);
+    next = nextUrl.pathname;
+  }
+
   redirectTo.pathname = next
 
   if (token_hash && type) {
@@ -25,6 +32,6 @@ export async function GET(request: NextRequest) {
   }
 
   // return the user to an error page with some instructions
-  redirectTo.pathname = '/auth/auth-code-error'
+  redirectTo.pathname = '/auth/auth-code-error';
   return NextResponse.redirect(redirectTo)
 }

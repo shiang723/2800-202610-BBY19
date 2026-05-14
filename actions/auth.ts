@@ -37,9 +37,6 @@ export async function signUpNewUser(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-            emailRedirectTo: '/',
-        }
     })
 
     if (error) {
@@ -48,7 +45,7 @@ export async function signUpNewUser(email: string, password: string) {
             isError: true
         };
     }
-    return { message: "New user account is created!",
+    return { message: "New user account is created! Please check you email box to verify your account",
              isError: false
     };
 }
