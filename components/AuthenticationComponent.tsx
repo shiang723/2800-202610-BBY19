@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithGoogleAccount } from "@/actions/auth";
 import Image from "next/image";
+import Link from "next/link";
 
 /*
 The email couldn't start or finish with a dot
@@ -200,10 +201,11 @@ export default function AuthenticationComponent({
 
         <button
           onClick={handleLoginWithGoogleAccount}
-          className="flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white"
+          className="mb-4 flex w-full justify-center rounded-md bg-blue-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 dark:text-white"
         >
           Sign in with Google
         </button>
+        <Link href="/reset-password" className="underline underline-offset-4 text-gray-500 decoration-solid italic hover:text-gray-900">Forgot your password</Link>
       </div>
     </div>
   );

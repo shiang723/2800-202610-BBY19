@@ -4,17 +4,21 @@ import { createClientForServerComponent } from '@/lib/supabase/server'
 
 export async function updatePassword(newPassword: string) {
     const supabase = await createClientForServerComponent();
-    await supabase.auth.updateUser({ password: 'newPassword' })
+    const { data, error } = await supabase.auth.updateUser({ password: 'newPassword' })
+
+    if (error) {
+        return { message: error }
+    }
+    return { message: "New password is set up!" }
 }
 
 export async function resetPassword(email: string) {
     const supabase = await createClientForServerComponent();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email)
-
     if (error) {
-        throw new Error("Signin error" + error);
+        return { message: error }
     }
-    return data;
+    return { message: "Password reset email is sent!" }
 }
 
 export async function signUpNewUser(email: string, password: string) {
@@ -28,9 +32,9 @@ export async function signUpNewUser(email: string, password: string) {
     })
 
     if (error) {
-        throw new Error("Signin error" + error);
+        return { message: error };
     }
-    return data;
+    return { message: "New user account is created!" };
 }
 
 export async function signInWithEmail(email: string, password: string) {
@@ -41,10 +45,10 @@ export async function signInWithEmail(email: string, password: string) {
     })
 
     if (error) {
-        throw new Error("Signin error" + error);
+        return { message: error };;
     }
 
-    return data;
+    return { message: "You are logged in!" };
 }
 
 export async function signInWithGoogleAccount() {
@@ -61,7 +65,6 @@ export async function signInWithGoogleAccount() {
     })
 
     if (error) {
-        alert(error);
         throw new Error("Signin error" + error);
     }
 
@@ -73,6 +76,6 @@ export async function signOut() {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-        console.log("Signin error" + error.message)
+        throw new Error("Signout error" + error);
     }
 }

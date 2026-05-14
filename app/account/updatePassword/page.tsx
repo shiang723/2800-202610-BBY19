@@ -14,12 +14,12 @@ password is 8-16 characters with no space
 const passwordRegex =
   /^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$/;
 
-export default function AuthenticationComponent() {
+export default function UpdatePasswordPage() {
   const [newPassword, setNewPassword] = useState<string>("");
   const [passwordErrorMsg, setPasswordErrorMsg] = useState<string>("");
   const router = useRouter();
 
-  // Delete error messages if password or email is empty
+  // Delete error messages if password is empty
   useEffect(() => {
     if (!newPassword) {
       setPasswordErrorMsg("");

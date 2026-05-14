@@ -14,7 +14,7 @@ The email could contain a double doman ( '.de.org' or similar rarity)
 */
 const emailRegex = /^((?!\.)[\w-_.]*[^.])(@\w+)(\.\w+(\.\w+)?[^.\W])$/i;
 
-export default function AuthenticationComponent() {
+export default function ResetPasswordPage() {
   const [email, setEmail] = useState<string>("");
   const [emailErrorMsg, setEmailErrorMsg] = useState<string>("");
   const router = useRouter();
@@ -83,7 +83,7 @@ export default function AuthenticationComponent() {
           />
         </div>
 
-        <h2>Please provide your email so we can send the password reset link to it</h2>
+        <h2 className="font-bold mb-4">Please provide your email so we can send the password reset link to it.</h2>
 
         <form method="POST" className="flex flex-col gap-4 mb-4">
           <div>
