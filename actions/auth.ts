@@ -2,6 +2,11 @@
 
 import { createClientForServerComponent } from '@/lib/supabase/server'
 
+export async function updatePassword(newPassword: string) {
+    const supabase = await createClientForServerComponent();
+    await supabase.auth.updateUser({ password: 'newPassword' })
+}
+
 export async function resetPassword(email: string) {
     const supabase = await createClientForServerComponent();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email)
