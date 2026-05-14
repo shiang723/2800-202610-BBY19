@@ -170,7 +170,8 @@ function setupShadeMap(
 async function setupCityData(map: maplibregl.Map) {
   // Loop through the data tables and add a layer of points for each dataset
   for (const dataSet of dataTables) {
-    // if (dataSet.id === "cafes") continue;
+    // Skips the cafe dataset since it's layer is already handled by yelpLoader function
+    if (dataSet.id === "cafes") continue;
 
     const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
     const data = (await fetch(url).then((res) =>

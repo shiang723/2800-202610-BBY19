@@ -23,6 +23,7 @@ export default function HomeContainer({ userEmail }: { userEmail?: string }) {
                             key={label} 
                             label={label} 
                             isActive = {activeFilter.includes(label)}
+                            // From Copilot. Grabs the current (previous) active filters and adds or removes the clicked filter from the list. 
                             onClick = {() => {
                                 setActiveFilter( (prev) => {
                                     if (prev.includes(label)) {
