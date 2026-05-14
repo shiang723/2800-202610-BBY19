@@ -376,7 +376,7 @@ export default function MapComponent({
       setupSearchbar(map);
       setupShadeMap(map, shadeInstance, dateInstance);
       setupCityData(map);
-      // loadYelpData(latitude, longitude, map);
+      loadYelpData(map);
     });
 
     return () => {

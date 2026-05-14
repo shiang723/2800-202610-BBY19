@@ -4,13 +4,13 @@
 import maplibregl from "maplibre-gl";
 
 export async function loadYelpData(
-  latitude: number,
-  longitude: number,
   map: maplibregl.Map,
 ) {
   try {
+    const lat = 49.24501114685754;
+    const lng = -123.11342343091847;
     const response = await fetch(
-      `/api/locations?source=yelp&location=${latitude},${longitude}&type=cafe`,
+      `/api/locations?source=yelp&location=${lat},${lng}&type=cafe`,
     );
     const data = await response.json();
 
