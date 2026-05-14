@@ -26,7 +26,7 @@ const passwordRegex =
 
 interface AuthenticationComponentProps {
   submitBtnName: string;
-  authFunction: (email: string, password: string) => Promise<unknown>;
+  authFunction: (email: string, password: string) => Promise<{isError:boolean, message:string}>;
   successMessage: string;
 }
 
@@ -101,10 +101,11 @@ export default function AuthenticationComponent({
     }
 
     try {
-      await authFunction(email, password);
-      alert(successMessage);
+      const data = await authFunction(email, password);
 
-      if (submitBtnName == "Sign in") {
+      alert(data.message);
+
+      if (!data.isError && submitBtnName == "Sign in") {
         router.push("/");
       }
     } catch (err: any) {

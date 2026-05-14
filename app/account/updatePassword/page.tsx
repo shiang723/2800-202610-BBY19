@@ -51,10 +51,13 @@ export default function UpdatePasswordPage() {
     }
 
     try {
-      await updatePassword(newPassword);
-      alert("You password has been changed!");
-
-      router.push("/");
+      console.log(newPassword);
+      const data = await updatePassword(newPassword);
+      console.log(data);
+      alert(data.message);
+      if(!data.isError) {
+        router.push("/");
+      }
     } catch (err: any) {
       console.log(err.message);
     } finally {

@@ -4,21 +4,32 @@ import { createClientForServerComponent } from '@/lib/supabase/server'
 
 export async function updatePassword(newPassword: string) {
     const supabase = await createClientForServerComponent();
-    const { data, error } = await supabase.auth.updateUser({ password: 'newPassword' })
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword })
 
     if (error) {
-        return { message: error }
+        return {
+            message: error.message,
+            isError: true
+        }
     }
-    return { message: "New password is set up!" }
+    return {
+        message: "New password is set up!",
+        isError: false
+    }
 }
 
 export async function resetPassword(email: string) {
     const supabase = await createClientForServerComponent();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email)
     if (error) {
-        return { message: error }
+        return {
+            message: error.message,
+            isError: true
+        }
     }
-    return { message: "Password reset email is sent!" }
+    return {message: "Password reset email is sent!",
+            isError: false
+    }
 }
 
 export async function signUpNewUser(email: string, password: string) {
@@ -32,9 +43,14 @@ export async function signUpNewUser(email: string, password: string) {
     })
 
     if (error) {
-        return { message: error };
+        return {
+            message: error.message,
+            isError: true
+        };
     }
-    return { message: "New user account is created!" };
+    return { message: "New user account is created!",
+             isError: false
+    };
 }
 
 export async function signInWithEmail(email: string, password: string) {
@@ -45,10 +61,15 @@ export async function signInWithEmail(email: string, password: string) {
     })
 
     if (error) {
-        return { message: error };;
+        return {
+            message: error.message,
+            isError: true
+        };;
     }
 
-    return { message: "You are logged in!" };
+    return { message: "You are logged in!",
+             isError: false
+    };
 }
 
 export async function signInWithGoogleAccount() {

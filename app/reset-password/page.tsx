@@ -51,9 +51,11 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      await resetPassword(email);
-      alert("Please check your email for the password reset link");
-      router.push("login");
+      const data = await resetPassword(email);
+      alert(data.message);
+      if(!data.isError) {
+        router.push("/");
+      }
     } catch (err: any) {
       console.log(err.message);
     } finally {
