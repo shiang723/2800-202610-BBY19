@@ -27,12 +27,10 @@ const passwordRegex =
 interface AuthenticationComponentProps {
   submitBtnName: string;
   authFunction: (email: string, password: string) => Promise<{isError:boolean, message:string}>;
-  successMessage: string;
 }
 
 export default function AuthenticationComponent({
   submitBtnName,
-  successMessage,
   authFunction,
 }: AuthenticationComponentProps) {
   const [email, setEmail] = useState<string>("");
