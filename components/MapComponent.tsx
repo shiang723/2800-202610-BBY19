@@ -90,29 +90,6 @@ function setupSearchbar(map: maplibregl.Map) {
 
 function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<ShadeMap | null>, dateInstance: React.RefObject<Date>) {
 
-
-  shadeInstance.current = new ShadeMap({
-    date: dateInstance.current, // display shadows for current date
-    color: "#01112f", // shade color
-    opacity: 0.7, // opacity of shade color
-    apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
-    terrainSource: {
-      tileSize: 256, // DEM tile size
-      maxZoom: 15, // Maximum zoom of DEM tile set
-      getSourceUrl: ({ x, y, z }) => {
-        // return DEM tile url for given x,y,z coordinates
-        return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
-      },
-      getElevation: ({ r, g, b }) => {
-        // return elevation in meters for a given DEM tile pixel
-        return r * 256 + g + b / 256 - 32768;
-      },
-    },
-    debug: (msg) => {
-      console.log(new Date().toISOString(), msg);
-    },
-  }).addTo(map);
-
   const sources = map.getStyle().sources;
   const buildingSource = "maptiler_planet_v4";
   const styleLayers = map.getStyle().layers;
@@ -141,6 +118,42 @@ function setupShadeMap(map: maplibregl.Map, shadeInstance: React.RefObject<Shade
       "fill-extrusion-opacity": 1.0,
     },
   });
+
+  shadeInstance.current = new ShadeMap({
+    date: dateInstance.current, // display shadows for current date
+    color: "#01112f", // shade color
+    opacity: 0.7, // opacity of shade color
+    apiKey: process.env.NEXT_PUBLIC_SHADEMAP_KEY || "", // obtain from https://shademap.app/about/
+    getFeatures: async () => {
+          const buildings = map.queryRenderedFeatures({ layers: ['3d-buildings'] });
+          return buildings.map(building => {
+            const buildingHeight = building.properties.render_height || building.properties.height || 10;
+            return {
+              type: "Feature",
+              geometry: building.geometry,
+              properties: {
+              height: buildingHeight,
+              render_height: buildingHeight
+              }
+            };
+          });
+        },
+    // terrainSource: {
+    //   tileSize: 256, // DEM tile size
+    //   maxZoom: 15, // Maximum zoom of DEM tile set
+    //   getSourceUrl: ({ x, y, z }) => {
+    //     // return DEM tile url for given x,y,z coordinates
+    //     return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+    //   },
+    //   getElevation: ({ r, g, b }) => {
+    //     // return elevation in meters for a given DEM tile pixel
+    //     return r * 256 + g + b / 256 - 32768;
+    //   },
+    // },
+    debug: (msg) => {
+      console.log(new Date().toISOString(), msg);
+    },
+  }).addTo(map);
 
   map.setLight({
     anchor: "map",
@@ -324,39 +337,39 @@ export default function MapComponent({
     map.on("load", () => {
       if (!mapMounted) return;
 
-      // navigator.geolocation.getCurrentPosition(
-      //   (pos) => {
-      //     const { latitude, longitude } = pos.coords;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
 
-      //     // Blue dot marker for user location
-      //     const el = document.createElement("div");
-      //     el.className =
-      //       "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+          // Blue dot marker for user location
+          const el = document.createElement("div");
+          el.className =
+            "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
 
-      //     new maplibregl.Marker({ element: el })
-      //       .setLngLat([longitude, latitude])
-      //       .addTo(map);
+          new maplibregl.Marker({ element: el })
+            .setLngLat([longitude, latitude])
+            .addTo(map);
 
-      //     // Center map on user
-      //     map.flyTo({ center: [longitude, latitude], zoom: 15 });
+          // Center map on user
+          map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
-      //   },
-      //   (err) => console.error("Location error:", err),
-      //   { enableHighAccuracy: true },
-      // );
+        },
+        (err) => console.error("Location error:", err),
+        { enableHighAccuracy: true },
+      );
 
       // temperary use vancovuer location
-      const latitude = 49.2827;
-      const longitude = -123.1207;
+      // const latitude = 49.2827;
+      // const longitude = -123.1207;
 
-      const el = document.createElement("div");
-      el.className =
-        "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
-      new maplibregl.Marker({ element: el })
-        .setLngLat([longitude, latitude])
-        .addTo(map);
+      // const el = document.createElement("div");
+      // el.className =
+      //   "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+      // new maplibregl.Marker({ element: el })
+      //   .setLngLat([longitude, latitude])
+      //   .addTo(map);
 
-      map.flyTo({ center: [longitude, latitude], zoom: 15 });
+      // map.flyTo({ center: [longitude, latitude], zoom: 15 });
 
 
 
@@ -365,7 +378,7 @@ export default function MapComponent({
       setupSearchbar(map);
       setupShadeMap(map, shadeInstance, dateInstance);
       setupCityData(map);
-      loadYelpData(latitude, longitude, map);
+      // loadYelpData(latitude, longitude, map);
 
 
 
