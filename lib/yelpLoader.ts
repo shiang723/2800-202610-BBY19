@@ -2,9 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import maplibregl from "maplibre-gl";
+import { showPopup } from "@/components/MapComponent";
 
-export async function loadYelpData(
+export async function setupYelpData(
   map: maplibregl.Map,
+  savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
+  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>
 ) {
   try {
     const lat = 49.24501114685754;
@@ -15,8 +18,6 @@ export async function loadYelpData(
     const data = await response.json();
 
     if (data.success && data.data.length) {
-      console.log(` Loaded ${data.data.length} cafes from Yelp API`);
-
       const cafeIcon = await map.loadImage("/cafe.png");
 
       //  make sure the image is loading
@@ -26,22 +27,25 @@ export async function loadYelpData(
       }
 
       // check if the image is exist and make sure not dupliated added
-      if (!map.hasImage("cafe-icon")) {
-        map.addImage("cafe-icon", cafeIcon.data);
+      if (!map.hasImage("cafes")) {
+        map.addImage("cafes", cafeIcon.data);
       }
 
       // conver to GeoJSON
       const geojson: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features: data.data.map((b: any) => ({
+        features: data.data.map((b: any, index: number) => ({
           type: "Feature",
           properties: {
             name: b.name,
             rating: b.rating,
             price: b.price,
             address: b.location?.address1,
-            type: b.categories?.[0]?.title || "Cafe",
+            type:"Cafe",
             yelpId: b.id,
+            id: `cafes-${index}`,
+            source: "cafes",
+            saved: false,
           },
           geometry: {
             type: "Point",
@@ -68,39 +72,14 @@ export async function loadYelpData(
         source: "cafes",
         minzoom: 14.35,
         layout: {
-          "icon-image": "cafe-icon",
+          "icon-image": "cafes",
           "icon-size": 0.05,
         },
       });
 
-      // click pop up page
-      map.on("click", "cafes", (e: any) => {
-        if (!e.features || !e.features[0]) return;
-        const props = e.features[0].properties;
-        const coords = (e.features[0].geometry as any).coordinates;
-
-        const html = `
-          <div class="p-3 max-w-xs">
-            <p class="font-bold text-base">${props.name}</p>
-            <p class="text-sm text-gray-600">${props.type}</p>
-            ${props.rating ? `<p class="text-sm mt-1">⭐ ${props.rating} / 5</p>` : ""}
-            ${props.price ? `<p class="text-sm">💰 ${props.price}</p>` : ""}
-            <p class="text-sm text-gray-500 mt-1">📍 ${props.address || "Address not available"}</p>
-            <button disabled class="w-full mt-3 bg-blue-00 text-white font-medium py-2 px-4 rounded-lg cursor-not-allowed">
-              Save to Collection (Coming Soon)
-              </button>
-          </div>
-        `;
-
-        new maplibregl.Popup().setLngLat(coords).setHTML(html).addTo(map);
-      });
-
-      map.on("mouseenter", "cafes", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "cafes", () => {
-        map.getCanvas().style.cursor = "";
-      });
+      showPopup(map, "cafes", savedLocationsRef, setSavedLocations);
+      
+      console.log(`Loaded ${data.data.length} cafes from Yelp`);
 
       return true;
     }
