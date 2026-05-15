@@ -7,14 +7,14 @@ export default function ProfilePage() {
   const [savedLocations, setSavedLocations] = useState([]);
   const [yelpLocations, setYelpLocations] = useState([]);
 
-  // 获取本地数据
+  // get local data
   useEffect(() => {
     fetch("/api/locations?source=local")
       .then((res) => res.json())
       .then((data) => setSavedLocations(data.data));
   }, []);
 
-  // 搜索 Yelp 餐厅/商店
+  // search yelp shop or cafe,etc
   const searchYelp = async (location: string, term: string) => {
     const response = await fetch(
       `/api/locations?source=yelp&location=${location}&term=${term}`,
@@ -33,7 +33,7 @@ export default function ProfilePage() {
         savedLocations={savedLocations}
         yelpLocations={yelpLocations}
         onSearchYelp={searchYelp}
-        // ... 其他 props
+        // ... other props
       />
     </div>
   );
