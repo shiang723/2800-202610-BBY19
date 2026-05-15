@@ -658,33 +658,10 @@ export default function MapComponent({
       />
       <TimeShiftBtns displayTime={displayTime} changeTime={changeTime} />
 
-      <div className="absolute top-32 right-4 md:top-28 md:right-6 z-[50] pointer-events-auto">
-        <WeatherUvBtns
-          mode={heatmapMode}
-          onModeChange={setHeatmapMode}
-        />
-      </div>
-
-      {heatmapMode !== "none" && (
-        <div className="absolute bottom-16 right-4 md:bottom-20 md:right-6 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 w-48 transition-all">
-          <p className="font-bold mb-2">
-            {heatmapMode === "weather" ? "Temperature (°C)" : "UV Index"}
-          </p>
-          <div
-            className="w-full h-3 rounded"
-            style={{
-              background: heatmapMode === "weather"
-                ? "linear-gradient(to right, #3982e0ff 0%, #34bce9ff 20%, #fdfd82ff 40%, #fdae61 65%, #f46d43 85%, #d73027 100%)"
-                : "linear-gradient(to right, #4dac26 0%, #4dac26 20%, #f1e71f 40%, #f77f00 60%, #d62728 80%, #6a0dad 100%)"
-            }}
-          />
-          <div className="flex justify-between mt-1 opacity-80 text-[10px] font-medium">
-            <span>{heatmapMode === "weather" ? "≤ 10°" : "0"}</span>
-            <span>{heatmapMode === "weather" ? "17°" : "4"}</span>
-            <span>{heatmapMode === "weather" ? "≥ 25°" : "8+"}</span>
-          </div>
-        </div>
-      )}
+      <WeatherUvBtns
+        mode={heatmapMode}
+        onModeChange={setHeatmapMode}
+      />
     </div>
   );
 }
