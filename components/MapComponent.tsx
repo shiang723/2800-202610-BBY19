@@ -7,6 +7,7 @@ import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
 import { loadYelpData } from "@/lib/yelpLoader";
 import TimeShiftBtns from "./TimeShiftBtns";
+import WeatherUvBtns, { HeatmapMode } from "./WeatherUvBtns";
 
 const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
@@ -291,6 +292,7 @@ export default function MapComponent({
   const dateInstance = useRef<Date>(new Date());
 
   const [displayTime, setDisplayTime] = useState("");
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("weather");
   const [weatherData, setWeatherData] = useState<{ temp: number; uv: number } | null>(null);
 
   const changeTime = (hours: number) => {
@@ -445,12 +447,20 @@ export default function MapComponent({
   }, [activeFilter]);
 
   return (
-    <div>
+    <div className="relative">
       <div
         ref={mapContainer}
         className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
       />
       <TimeShiftBtns displayTime={displayTime} changeTime={changeTime} />
+
+      <div className="absolute top-32 right-4 md:top-28 md:right-6 z-[50] pointer-events-auto">
+    <WeatherUvBtns 
+      mode={heatmapMode} 
+      onModeChange={setHeatmapMode} 
+      // weatherData prop is no longer used for labels, but kept for state logic if needed
+    />
+  </div>
     </div>
   );
 }
