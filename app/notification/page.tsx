@@ -2,7 +2,7 @@
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client"
+import { createClientForClientComponent } from "@/lib/supabase/client";
 
 interface NotificationSetting {
     sunscreen_on: boolean;
@@ -24,6 +24,7 @@ interface NotificationSetting {
 }
 
 export default function NotificationPage() {
+    const supabase = createClientForClientComponent();
     const now = new Date();
     const nowString = now.toISOString().slice(0, 16);
     /**
