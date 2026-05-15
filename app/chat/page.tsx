@@ -5,7 +5,13 @@ import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
 import Image from "next/image";
 import { UserCircle, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { createClientForClientComponent } from "@/lib/supabase/client";
 
 type ChatPreview = {
@@ -14,6 +20,14 @@ type ChatPreview = {
   avatar_url: string | null;
   last_message: string;
   updated_at: string;
+};
+
+type RealtimeMessage = {
+  id: number;
+  room_id: number;
+  profile_id: number;
+  message_text: string;
+  created_at: string;
 };
 
 function formatMessageTime(timestamp: string | null) {
@@ -26,15 +40,21 @@ function formatMessageTime(timestamp: string | null) {
 }
 
 export default function Chat() {
-  const supabase = createClientForClientComponent();
+  const supabase = useMemo(() => createClientForClientComponent(), []);
 
   const [open, setOpen] = useState(false);
   const [chats, setChats] = useState<ChatPreview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentProfileId, setCurrentProfileId] = useState<number | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    async function loadConversations() {
+  const loadConversations = useCallback(
+    async (showLoading = false) => {
+      if (showLoading) {
+        setLoading(true);
+      }
+
       const {
         data: { user },
         error: userError,
@@ -58,7 +78,8 @@ export default function Chat() {
         return;
       }
 
-      const currentProfileId = profile.id;
+      const profileId = profile.id;
+      setCurrentProfileId(profileId);
 
       const { data, error } = await supabase
         .from("chat_member")
@@ -84,7 +105,7 @@ export default function Chat() {
             )
           )
         `)
-        .eq("profile_id", currentProfileId);
+        .eq("profile_id", profileId);
 
       if (error) {
         console.error("Could not load conversations:", error);
@@ -93,36 +114,115 @@ export default function Chat() {
       }
 
       const formattedChats =
-        data?.map((row: any) => {
-          const conversation = row.room;
+        data
+          ?.map((row: any) => {
+            const conversation = row.room;
 
-          const otherMember = conversation.chat_member.find(
-            (member: any) => member.profile_id !== currentProfileId
-          );
+            if (!conversation) {
+              return null;
+            }
 
-          const latestMessage = conversation.message?.sort(
-            (a: any, b: any) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )[0];
+            const otherMember = conversation.chat_member.find(
+              (member: any) => member.profile_id !== profileId
+            );
 
-          return {
-            id: conversation.id,
-            name: otherMember?.profile
-              ? `${otherMember.profile.firstname} ${otherMember.profile.lastname}`
-              : "Unknown User",
-            avatar_url: otherMember?.profile?.avatar_url ?? null,
-            last_message: latestMessage?.message_text ?? "No messages yet",
-            updated_at: latestMessage?.created_at ?? conversation.updated_at,
-          };
-        }) ?? [];
+            const latestMessage = conversation.message?.sort(
+              (a: any, b: any) =>
+                new Date(b.created_at + "Z").getTime() -
+                new Date(a.created_at + "Z").getTime()
+            )[0];
 
-      setChats(formattedChats);
+            return {
+              id: String(conversation.id),
+              name: otherMember?.profile
+                ? `${otherMember.profile.firstname} ${otherMember.profile.lastname}`
+                : "Unknown User",
+              avatar_url: otherMember?.profile?.avatar_url ?? null,
+              last_message: latestMessage?.message_text ?? "No messages yet",
+              updated_at: latestMessage?.created_at ?? conversation.updated_at,
+            };
+          })
+          .filter((chat): chat is ChatPreview => chat !== null)
+          .sort(
+            (a: ChatPreview, b: ChatPreview) =>
+              new Date(b.updated_at + "Z").getTime() -
+              new Date(a.updated_at + "Z").getTime()
+          ) ?? [];
+
+      setChats(formattedChats as ChatPreview[]);
       setLoading(false);
-    }
+    },
+    [supabase]
+  );
 
-    loadConversations();
-  }, []);
+  useEffect(() => {
+    loadConversations(true);
+  }, [loadConversations]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("chat-page-message-previews")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "message",
+        },
+        (payload) => {
+          const newMessage = payload.new as RealtimeMessage;
+
+          setChats((currentChats) => {
+            const updatedChats = currentChats.map((chat) => {
+              if (String(chat.id) !== String(newMessage.room_id)) {
+                return chat;
+              }
+
+              return {
+                ...chat,
+                last_message: newMessage.message_text,
+                updated_at: newMessage.created_at,
+              };
+            });
+
+            return updatedChats.sort(
+              (a, b) =>
+                new Date(b.updated_at + "Z").getTime() -
+                new Date(a.updated_at + "Z").getTime()
+            );
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!currentProfileId) return;
+
+    const channel = supabase
+      .channel(`chat-member-${currentProfileId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_member",
+          filter: `profile_id=eq.${currentProfileId}`,
+        },
+        () => {
+          loadConversations(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentProfileId, loadConversations, supabase]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

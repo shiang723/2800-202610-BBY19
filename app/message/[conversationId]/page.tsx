@@ -75,6 +75,40 @@ export default function MessagePage({ params }: MessagePageProps) {
     loadMessages();
   }, [conversationId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel(`room-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "message",
+          filter: `room_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+
+          setMessages((currentMessages) => {
+            const alreadyExists = currentMessages.some(
+              (message) => message.id === newMessage.id
+            );
+
+            if (alreadyExists) {
+              return currentMessages;
+            }
+
+            return [...currentMessages, newMessage];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, supabase]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -83,7 +117,7 @@ export default function MessagePage({ params }: MessagePageProps) {
     const messageText = inputText.trim();
     setInputText("");
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("message")
       .insert({
         room_id: conversationId,
@@ -98,8 +132,6 @@ export default function MessagePage({ params }: MessagePageProps) {
       setInputText(messageText);
       return;
     }
-
-    setMessages((currentMessages) => [...currentMessages, data]);
   };
 
   return (
