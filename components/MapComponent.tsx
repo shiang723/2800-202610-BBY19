@@ -421,9 +421,9 @@ function updateHeatmap(
       "interpolate",
       ["linear"],
       ["get", "weight"],
-      0, "#abd9e9", // cool blue
-      0.2, "#abd9e9", // cool blue
-      0.4, "#ffffbf", // mild yellow
+      0, "#3982e0ff", // cool blue
+      0.2, "#34bce9ff", // cool blue
+      0.4, "#fdfd82ff", // mild yellow
       0.65, "#fdae61", // warm orange
       0.85, "#f46d43", // hot orange-red
       1, "#d73027", // very hot red
@@ -674,7 +674,7 @@ export default function MapComponent({
             className="w-full h-3 rounded"
             style={{
               background: heatmapMode === "weather"
-                ? "linear-gradient(to right, #abd9e9 0%, #abd9e9 20%, #ffffbf 40%, #fdae61 65%, #f46d43 85%, #d73027 100%)"
+                ? "linear-gradient(to right, #3982e0ff 0%, #34bce9ff 20%, #fdfd82ff 40%, #fdae61 65%, #f46d43 85%, #d73027 100%)"
                 : "linear-gradient(to right, #4dac26 0%, #4dac26 20%, #f1e71f 40%, #f77f00 60%, #d62728 80%, #6a0dad 100%)"
             }}
           />
