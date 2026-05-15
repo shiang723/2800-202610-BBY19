@@ -292,7 +292,7 @@ export default function MapComponent({
   const dateInstance = useRef<Date>(new Date());
 
   const [displayTime, setDisplayTime] = useState("");
-  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("weather");
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("none");
   const [weatherData, setWeatherData] = useState<{ temp: number; uv: number } | null>(null);
 
   const changeTime = (hours: number) => {
@@ -458,7 +458,6 @@ export default function MapComponent({
     <WeatherUvBtns 
       mode={heatmapMode} 
       onModeChange={setHeatmapMode} 
-      // weatherData prop is no longer used for labels, but kept for state logic if needed
     />
   </div>
     </div>
