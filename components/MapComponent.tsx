@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ShadeMap from "mapbox-gl-shadow-simulator";
 import { GeocodingControl } from "@maptiler/geocoding-control/maplibregl";
-import { loadYelpData } from "@/lib/yelpLoader";
+import { setupYelpData } from "@/lib/yelpLoader";
 import TimeShiftBtns from "./TimeShiftBtns";
 
 const maptilerApiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
@@ -23,7 +23,7 @@ const dataTables = [
     icon: "fountain",
     minZoom: 14.35,
     type: "Water Fountain",
-    label: "Fountains",
+    label: "Water",
     filter: (feature: GeoJSON.Feature) =>
       feature.properties?.name.includes("Fountain"),
   },
@@ -38,6 +38,7 @@ const dataTables = [
       feature.properties?.park_name !== null,
   },
   { id: "cafes", label: "Cafes", minZoom: 14.35 },
+  { id: "saved-locations", label: "Saved" }
 ];
 
 const bbox: [number, number, number, number] = [
@@ -86,7 +87,7 @@ function setupSearchbar(map: maplibregl.Map) {
   document
     .querySelector("maptiler-geocoder-feature-item")
     ?.shadowRoot?.appendChild(searchDropdownStyle);
-}
+};
 
 function setupShadeMap(
   map: maplibregl.Map,
@@ -165,26 +166,46 @@ function setupShadeMap(
     intensity: 0.4,
     position: [1, 210, 30],
   });
-}
+};
 
-async function setupCityData(map: maplibregl.Map) {
+async function setupCityData(
+  map: maplibregl.Map,
+  savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
+  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>,
+  dataCache: React.RefObject<Record<string, GeoJSON.Feature[]>>
+) {
+
+
   // Loop through the data tables and add a layer of points for each dataset
   for (const dataSet of dataTables) {
     // Skips the cafe dataset since it's layer is already handled by yelpLoader function
-    if (dataSet.id === "cafes") continue;
+    if (dataSet.id === "cafes" || dataSet.id === "saved-locations") continue;
 
     const url = `https://vancouver.opendatasoft.com/api/explore/v2.1/catalog/datasets/${dataSet.id}/exports/geojson`;
     const data = (await fetch(url).then((res) =>
       res.json(),
     )) as GeoJSON.FeatureCollection;
-    const dataFiltered = {
+
+    const filterData = {
       ...data,
       features: dataSet.filter
         ? data.features.filter(dataSet.filter)
         : data.features,
     };
 
-
+    const idData = {
+      ...filterData,
+      features: filterData.features.map((feature, index) => ({
+        ...feature,
+        properties: {
+          ...feature.properties,
+          id: `${dataSet.id}-${index}`,
+          source: dataSet.id,
+          type: dataSet.type,
+          saved: false,
+        },
+      })),
+    };
 
     if (dataSet.icon) {
       const image = await map.loadImage("/" + dataSet.icon + ".png");
@@ -193,7 +214,7 @@ async function setupCityData(map: maplibregl.Map) {
 
     map.addSource(dataSet.id, {
       type: "geojson",
-      data: dataFiltered,
+      data: idData,
     });
     map.addLayer({
       id: dataSet.id,
@@ -206,78 +227,183 @@ async function setupCityData(map: maplibregl.Map) {
       },
     });
 
-    // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
+    dataCache.current[dataSet.id] = idData.features;
 
-    // When a click event occurs on a feature in the places layer, open a popup at the
-    // location of the feature, with description HTML from its properties.
-    map.on("click", dataSet.id, (e) => {
-      if (!e.features || !e.features[0]) return;
+    showPopup(map, dataSet.id, savedLocationsRef, setSavedLocations);
 
-      const location = e.features[0];
-      const coordinates = (
-        location.geometry as GeoJSON.Point
-      ).coordinates.slice();
-      const properties = location.properties;
+    console.log(`Loaded ${idData.features.length} ${dataSet.id} from City of Vancouver`)
 
-      let html = ``;
+  }
 
-      if (dataSet.id === "parks") {
-        html += `
-              <p class="text-sm font-bold">${properties.name}</p>
-              <p class="text-xs">${dataSet.type}</p>
-              <p class="text-xs"><b>Washrooms: </b>${properties.washrooms}</p>
-              <p>
-                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
-                  class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
-              </p>
-              <p>
-                <a href="https://covapp.vancouver.ca/parkfinder/parkdetail.aspx?inparkid=${properties.parkid}"
-                  class="text-xs text-blue-500" target="_blank">More info</a>
-              </p>
-            `;
-      } else if (dataSet.id === "community-centres") {
-        html += `
-              <p class="text-sm font-bold">${properties.name}</p>
-              <p class="text-xs">${dataSet.type}</p>
-              <p class="text-xs"><b>Washrooms: </b>Y</p>
-              <p>
-                <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
-                  class="text-xs text-blue-500" target="_blank">${properties.address}</a>
-              </p>
-              <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
-            `;
-      } else if (dataSet.id === "drinking-fountains") {
-        const nameFilter = properties.name.indexOf("location:");
-        const name = properties.name.slice(nameFilter + 9).trim();
-        html += `
-                <p class="text-sm font-bold">${name}</p>
-                <p class="text-xs">${dataSet.type}</p>
-                <p class="text-xs"><b>Location: </b>${properties.location}</p>
-              `;
-      } else if (dataSet.id === "public-washrooms") {
-        html += `
-                <p class="text-sm font-bold">${properties.park_name}</p>
-                <p class="text-xs">${dataSet.type}</p>
-                <p class="text-xs"><b>Location: </b>${properties.location}</p>
-              `;
+};
+
+async function setupSavedData(
+  map: maplibregl.Map,
+  savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
+  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>,
+) {
+  map.addSource('saved-locations', {
+    type: "geojson",
+    data: {
+      type: "FeatureCollection",
+      features: [],
+    },
+  });
+
+  const image = await map.loadImage("/saved-icon.png");
+  map.addImage("saved-locations", image.data);
+
+  map.addLayer({
+    id: "saved-locations",
+    source: "saved-locations",
+    type: "symbol",
+    layout: {
+      "icon-image": [
+        "match",
+        ["get", "source"], // Match the values according to source property
+        "parks", "parks", //  if source = parks, then icon-image = parks
+        "community-centres", "community-centres",
+        "drinking-fountains", "drinking-fountains",
+        "public-washrooms", "public-washrooms",
+        "cafes", "cafes",
+        "saved-locations"
+      ],
+      "icon-size": [
+        "match",
+        ["get", "source"], // 
+        "public-washrooms", 0.06,
+        0.05
+      ],
+    },
+  });
+
+  showPopup(map, "saved-locations", savedLocationsRef, setSavedLocations)
+
+};
+
+export function buildPopupHTML(dataSetId: string, properties: any): string {
+  if (dataSetId === "parks") {
+    return `
+      <p class="text-sm font-bold">${properties.name}</p>
+      <p class="text-xs">${properties.type}</p>
+      <p class="text-xs"><b>Washrooms: </b>${properties.washrooms}</p>
+      <p>
+        <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+          class="text-xs text-blue-500" target="_blank">${properties.streetnumber} ${properties.streetname}</a>
+      </p>
+      <p>
+        <a href="https://covapp.vancouver.ca/parkfinder/parkdetail.aspx?inparkid=${properties.parkid}"
+          class="text-xs text-blue-500" target="_blank">More info</a>
+      </p>
+    `;
+  }
+  if (dataSetId === "community-centres") {
+    return `
+      <p class="text-sm font-bold">${properties.name}</p>
+      <p class="text-xs">${properties.type}</p>
+      <p class="text-xs"><b>Washrooms: </b>Y</p>
+      <p>
+        <a href="https://www.google.ca/maps?f=d&daddr=${properties.name},Vancouver,BC,Canada&z=1"
+          class="text-xs text-blue-500" target="_blank">${properties.address}</a>
+      </p>
+      <p><a href="${properties.urllink}" class="text-xs text-blue-500" target="_blank">More info</a></p>
+    `;
+  }
+  if (dataSetId === "drinking-fountains") {
+    const nameFilter = properties.name.indexOf("location:");
+    const name = properties.name.slice(nameFilter + 9).trim();
+    return `
+      <p class="text-sm font-bold">${name}</p>
+      <p class="text-xs">${properties.type}</p>
+      <p class="text-xs"><b>Location: </b>${properties.location}</p>
+    `;
+  }
+  if (dataSetId === "public-washrooms") {
+    return `
+      <p class="text-sm font-bold">${properties.park_name}</p>
+      <p class="text-xs">${properties.type}</p>
+      <p class="text-xs"><b>Location: </b>${properties.location}</p>
+    `;
+  }
+  if (dataSetId === "cafes") {
+    return `
+      <p class="text-sm font-bold">${properties.name}</p>
+      <p class="text-xs">${properties.type}</p>
+      ${properties.rating ? `<p class="text-xs"><b>Rating: </b> ${properties.rating} / 5</p>` : "Rating unavailable"}
+      <p class="text-xs"><b>Location: </b>${properties.address || "Address unavailable"}</p>
+    `;
+  }
+  return "Error building HTML";
+}
+
+export function showPopup(
+  map: maplibregl.Map,
+  source: string,
+  savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
+  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>
+) {
+  // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
+
+  // When a click event occurs on a feature in the places layer, open a popup at the
+  // location of the feature, with description HTML from its properties.
+  map.on("click", source, (e) => {
+    if (!e.features || !e.features[0]) return;
+
+    const location = e.features[0];
+    const coordinates = (
+      location.geometry as GeoJSON.Point
+    ).coordinates.slice();
+    const properties = location.properties;
+
+    const popupContent = document.createElement('div');
+    popupContent.innerHTML = buildPopupHTML(properties.source, properties);
+    const saveBtn = document.createElement('img');
+    saveBtn.className = "w-6 h-6 mt-2 cursor-pointer";
+
+    const isSaved = () =>
+      savedLocationsRef.current.some(
+        (loc) => loc.properties?.id === properties?.id
+      );
+
+    saveBtn.src = `/${isSaved() ? "saved" : "save"}-icon.png`;
+
+    saveBtn.addEventListener("click", () => {
+
+      const newLocation: GeoJSON.Feature = {
+        type: "Feature",
+        geometry: location.geometry as GeoJSON.Geometry,
+        properties: { ...properties, saved: true },
+      };
+
+      if (isSaved()) {
+        setSavedLocations((prev) => prev.filter((loc) => loc.properties?.id !== properties.id));
+        saveBtn.src = `/save-icon.png`;
+      } else {
+        setSavedLocations((prev) => [...prev, newLocation]);
+        saveBtn.src = `/saved-icon.png`;
       }
 
-      new maplibregl.Popup()
-        .setLngLat(coordinates as [number, number])
-        .setHTML(html)
-        .addTo(map);
     });
 
-    // Change the cursor to a pointer when the mouse is over the places layer.
-    map.on("mouseenter", dataSet.id, () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
+    popupContent.appendChild(saveBtn);
 
-    // Change it back to a pointer when it leaves.
-    map.on("mouseleave", dataSet.id, () => {
-      map.getCanvas().style.cursor = "";
-    });
-  }
+    new maplibregl.Popup()
+      .setLngLat(coordinates as [number, number])
+      .setDOMContent(popupContent)
+      .addTo(map);
+
+  });
+
+  // Change the cursor to a pointer when the mouse is over the places layer.
+  map.on("mouseenter", source, () => {
+    map.getCanvas().style.cursor = "pointer";
+  });
+
+  // Change it back to a pointer when it leaves.
+  map.on("mouseleave", source, () => {
+    map.getCanvas().style.cursor = "";
+  });
+
 }
 
 export default function MapComponent({
@@ -289,8 +415,18 @@ export default function MapComponent({
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
   const dateInstance = useRef<Date>(new Date());
+  const dataCache = useRef<Record<string, GeoJSON.Feature[]>>({});
 
   const [displayTime, setDisplayTime] = useState("");
+  const [savedLocations, setSavedLocations] = useState<GeoJSON.Feature[]>([]);
+  const savedLocationsRef = useRef<GeoJSON.Feature[]>([]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    savedLocationsRef.current = savedLocations;
+  }, [savedLocations]);
+
+
 
   const changeTime = (hours: number) => {
     if (!shadeInstance.current) return;
@@ -339,7 +475,7 @@ export default function MapComponent({
 
     const map = mapInstance.current;
 
-    map.on("load", () => {
+    map.on("load", async () => {
       if (!mapMounted) return;
 
       navigator.geolocation.getCurrentPosition(
@@ -362,46 +498,61 @@ export default function MapComponent({
         { enableHighAccuracy: true },
       );
 
-      // temperary use vancovuer location
-      // const latitude = 49.2827;
-      // const longitude = -123.1207;
-
-      // const el = document.createElement("div");
-      // el.className =
-      //   "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
-      // new maplibregl.Marker({ element: el })
-      //   .setLngLat([longitude, latitude])
-      //   .addTo(map);
-
-      // map.flyTo({ center: [longitude, latitude], zoom: 15 });
-
       setDisplayTime(dateInstance.current.toLocaleTimeString());
-
       setupSearchbar(map);
       setupShadeMap(map, shadeInstance, dateInstance);
-      setupCityData(map);
-      loadYelpData(map);
+      setupCityData(map, savedLocationsRef, setSavedLocations, dataCache);
+      setupYelpData(map, savedLocationsRef, setSavedLocations);
+      setupSavedData(map, savedLocationsRef, setSavedLocations);
+
     });
 
     return () => {
       mapMounted = false;
 
       try {
-        if (shadeInstance.current) {
-          shadeInstance.current.remove();
-          shadeInstance.current = null;
-        }
-        if (mapInstance.current) {
-          mapInstance.current.remove();
-          mapInstance.current = null;
-        }
-      } catch (e) {
-        // Force null even if removal threw
+        shadeInstance.current?.remove();
+        shadeInstance.current = null;
+        mapInstance.current?.remove();
+        mapInstance.current = null;
+      } catch {
         shadeInstance.current = null;
         mapInstance.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const savedSource = map.getSource("saved-locations") as maplibregl.GeoJSONSource;
+    if (savedSource) {
+      savedSource.setData({
+        type: "FeatureCollection",
+        features: savedLocations,
+      });
+    };
+
+    for (const dataSet of dataTables) {
+      const source = map.getSource(dataSet.id) as maplibregl.GeoJSONSource;
+      const locations = dataCache.current[dataSet.id];
+      if (!source || !locations) continue;
+
+      source.setData({
+        type: "FeatureCollection",
+        features: locations.map((feature) => ({
+          ...feature,
+          properties: {
+            ...feature.properties,
+            saved: savedLocations.some(
+              (loc) => loc.properties?.id === feature.properties?.id
+            ),
+          },
+        })),
+      });
+    }
+  }, [savedLocations]);
 
   useEffect(() => {
     const map = mapInstance.current;
