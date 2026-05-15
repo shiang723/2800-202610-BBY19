@@ -1,6 +1,6 @@
 'use client'
 import Image from "next/image"
-import { useRef, useState, useEffect } from "react";
+import { useRef, useEffect } from "react";
 /**
  * Creating different props using type
  * Adapted from Gemini 3 fast model
@@ -8,7 +8,10 @@ import { useRef, useState, useEffect } from "react";
  */
 type BaseNotificationProps = {
     locationUser?: { longitude: number; latitude: number };
+    onClose?: () => void;
 };
+
+export type NotificationType = "sunscreen" | "hydration" | "uv";
 
 type SunscreenNotification = BaseNotificationProps & {
     type: "sunscreen";
@@ -49,11 +52,7 @@ uvMap.set(9, veryHighMessage)
 uvMap.set(10, veryHighMessage)
 
 export default function Notification(props: NotificationProps) {
-    const { type } = props
-    const [open, setOpen] = useState(function () {
-        if (!props.timeOfNotif) return true;
-        return false;
-    });
+    const { type, onClose } = props
     const currentModal = useRef<HTMLDialogElement>(null);
 
     /**Fix backdrop not showing up behind modal bug and setState synchronous error.
@@ -62,47 +61,29 @@ export default function Notification(props: NotificationProps) {
      */
 
     useEffect(() => {
-        if (!props.timeOfNotif) return;
-
-        const targetTime = new Date(props.timeOfNotif);
-        targetTime.setSeconds(0, 0);
-
-        const delay = targetTime.getTime() - new Date().getTime();
-
-        if (delay < 0) return;
-
-        const timerId = setTimeout(function () {
-            setOpen(true);
-        }, delay);
-
-        return function () {
-            clearTimeout(timerId);
-        };
-    }, [props.timeOfNotif])
-
-    useEffect(() => {
         const dialog = currentModal.current;
         if (!dialog) return;
 
-        if (open) {
-            requestAnimationFrame(function () {
-                if (!dialog.open) {
-                    dialog.showModal();
-                }
-            });
+        requestAnimationFrame(function () {
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        });
 
-        } else {
+        return () => {
             if (dialog.open) {
                 dialog.close();
             }
-        }
-    }, [open]);
+        };
+    }, []);
     //End of adapted code.
 
-    const uvMessage = (type == "uv" && props.uvIndex) ? ((props.uvIndex > 10) ? extremeMessage : uvMap.get(props.uvIndex)) : null
+    const uvMessage = props.type === "uv"
+        ? (props.uvIndex > 10 ? extremeMessage : uvMap.get(props.uvIndex))
+        : null;
     return (
         <div id="notification-container">
-            <dialog ref={currentModal} id="notification" className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto">
+            <dialog ref={currentModal} id="notification" className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto" onCancel={onClose}>
                 {/* How to render different html based on type prop. Adapted from Gemini 3 fast model: https://gemini.google.com/app    */}
                 {type === "sunscreen" && (
                     <>
@@ -148,7 +129,7 @@ export default function Notification(props: NotificationProps) {
                 )}
                 {/** End of adapted code. */}
                 <div className="flex">
-                    <button type="button" onClick={() => setOpen(false)} className="bg-gray-700 hover:bg-gray-800 text-white rounded-lg grow p-1">Exit</button>
+                    <button type="button" onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white rounded-lg grow p-1">Exit</button>
                 </div>
             </dialog >
         </div >

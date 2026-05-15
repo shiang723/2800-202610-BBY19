@@ -9,18 +9,16 @@ interface NotificationSetting {
     sunscreen_start_time: string;
     sunscreen_end_time: string;
     sunscreen_interval: number;
-    sunscreen_next_time: string | null;
     uv_on: boolean;
     uv_start_time: string;
     uv_end_time: string;
     uv_interval: number;
-    uv_next_time: string | null;
     hydration_on: boolean;
     hydration_start_time: string;
     hydration_end_time: string;
     hydration_interval: number;
-    hydration_next_time: string | null;
     message_on: boolean;
+    last_updated?: string;
 }
 
 export default function NotificationPage() {
@@ -37,18 +35,16 @@ export default function NotificationPage() {
         sunscreen_start_time: nowString,
         sunscreen_end_time: nowString,
         sunscreen_interval: 2,
-        sunscreen_next_time: null,
         uv_on: true,
         uv_start_time: nowString,
         uv_end_time: nowString,
         uv_interval: 2,
-        uv_next_time: null,
         hydration_on: true,
         hydration_start_time: nowString,
         hydration_end_time: nowString,
         hydration_interval: 0.5,
-        hydration_next_time: null,
-        message_on: true
+        message_on: true,
+        last_updated: nowString
     });
     /**End of adapted code */
     useEffect(() => {
@@ -67,17 +63,14 @@ export default function NotificationPage() {
                 sunscreen_start_time: data?.['sunscreen_start_time'] ? data['sunscreen_start_time'].slice(0, 16) : nowString,
                 sunscreen_end_time: data?.['sunscreen_end_time'] ? data['sunscreen_end_time'].slice(0, 16) : nowString,
                 sunscreen_interval: data ? Number(data['sunscreen_interval']) : 2,
-                sunscreen_next_time: data?.['sunscreen_next_time'] ? data['sunscreen_next_time'].slice(0, 16) : nowString,
                 uv_on: data ? data['uv_on'] : true,
                 uv_start_time: data?.['uv_start_time'] ? data['uv_start_time'].slice(0, 16) : nowString,
                 uv_end_time: data?.['uv_end_time'] ? data['uv_end_time'].slice(0, 16) : nowString,
                 uv_interval: data ? Number(data['uv_interval']) : 2,
-                uv_next_time: data?.['uv_next_time'] ? data['uv_next_time'].slice(0, 16) : nowString,
                 hydration_on: data ? data['hydration_on'] : true,
                 hydration_start_time: data?.['hydration_start_time'] ? data['hydration_start_time'].slice(0, 16) : nowString,
                 hydration_end_time: data?.['hydration_end_time'] ? data['hydration_end_time'].slice(0, 16) : nowString,
                 hydration_interval: data ? Number(data['hydration_interval']) : 0.5,
-                hydration_next_time: data?.['hydration_next_time'] ? data['hydration_next_time'].slice(0, 16) : nowString,
                 message_on: data ? data['message_on'] : true
             };
             setSettings(mappedSettings)
@@ -90,57 +83,33 @@ export default function NotificationPage() {
         if (!settings) return;
         const updatedData = { ...settings, [field]: value };
 
-        if (field.toString().startsWith("hydration")) {
-            const startDate = new Date(updatedData.hydration_start_time as string);
-            const endDate = new Date(updatedData.hydration_end_time as string);
-            const interval = Number(updatedData.hydration_interval);
-            const nextDate = new Date(startDate.getTime() + interval * 60 * 60 * 1000);
-            if (nextDate <= endDate) {
-                const pad = (num: number) => String(num).padStart(2, '0');
-                updatedData.sunscreen_next_time = `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}-${pad(nextDate.getDate())}T${pad(nextDate.getHours())}:${pad(nextDate.getMinutes())}`;
-            } else {
-                updatedData.hydration_next_time = null;
-            }
-        } if (field.toString().startsWith("sunscreen")) {
-            const startDate = new Date(updatedData.sunscreen_start_time as string);
-            const endDate = new Date(updatedData.sunscreen_end_time as string);
-            const interval = Number(updatedData.sunscreen_interval);
-            const nextDate = new Date(startDate.getTime() + interval * 60 * 60 * 1000);
-            if (nextDate <= endDate) {
-                /**
-                * Fix bug with interval adding 8 extra hours
-                 * Adapted from Gemini 3 fast
-                * https://gemini.google.com/app
-                */
-                const pad = (num: number) => String(num).padStart(2, '0');
-                updatedData.sunscreen_next_time = `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}-${pad(nextDate.getDate())}T${pad(nextDate.getHours())}:${pad(nextDate.getMinutes())}`;
-            } else {
-                updatedData.sunscreen_next_time = null;
-            }
-        } if (field.toString().startsWith("uv")) {
-            const startDate = new Date(updatedData.uv_start_time as string);
-            const endDate = new Date(updatedData.uv_end_time as string);
-            const interval = Number(updatedData.uv_interval);
-            const nextDate = new Date(startDate.getTime() + interval * 60 * 60 * 1000);
-            if (nextDate <= endDate) {
-                const pad = (num: number) => String(num).padStart(2, '0');
-                updatedData.sunscreen_next_time = `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}-${pad(nextDate.getDate())}T${pad(nextDate.getHours())}:${pad(nextDate.getMinutes())}`;
-            } else {
-                updatedData.uv_next_time = null;
-            }
-        }
-
         setSettings(updatedData);
+
         const { data: { user } } = await supabase.auth.getUser()
         const userID = user?.id;
 
-        // Fix supabase POST bug with timedateptz recieving ""
+        // Fix supabase POST bug with timedate recieving ""
         // Adapted from Gemini 3 fast
         // https://gemini.google.com/app
+        const updatedAt = new Date();
+        const pad = (num: number) => num.toString().padStart(2, '0');
+
+        const yy = updatedAt.getFullYear().toString();
+        const mm = pad(updatedAt.getMonth() + 1);
+        const dd = pad(updatedAt.getDate());
+        const hh = pad(updatedAt.getHours());
+        const min = pad(updatedAt.getMinutes());
+        const sec = pad(updatedAt.getSeconds());
+
+        updatedData.last_updated = `${yy}-${mm}-${dd} ${hh}:${min}:${sec}`;
+
         if (user && userID) {
             //  Dispatch clean request down to Supabase table
-            await supabase.from("notificationSetting")
+            const { error } = await supabase.from("notificationSetting")
                 .upsert(updatedData, { onConflict: "user_id" });
+            if (error) {
+                console.log(error)
+            }
         }
         //End of Adapted code
     }
