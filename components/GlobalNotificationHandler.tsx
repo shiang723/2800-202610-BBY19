@@ -5,18 +5,18 @@ import Notification, { type NotificationType } from "./Notification";
 import { createClientForClientComponent } from "@/lib/supabase/client";
 
 /**
- * Refactor the code in this file to be more readable and fix type errors using GPT-5.4 mini extension on VSCode
+ * Refactored the code in this file to be more readable and fix type errors using GPT-5.4 mini extension on VSCode
  */
 const NOTIFICATION_TYPES = ["sunscreen", "uv", "hydration"] as const satisfies readonly NotificationType[];
 
-// Keep date formatting in one place so Supabase writes and local comparisons use the same shape.
+// Format datetime to match supabase format
 const formatDateTimeLocal = (date: Date) => {
     const pad = (num: number) => String(num).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-// Normalize values coming back from Supabase into the format used by datetime-local inputs.
-const normalizeDateTime = (value: string | null | undefined) => {
+// Format datatime from supabase to match javascript Date format
+const formatDateTimeData = (value: string | null | undefined) => {
     if (!value) return "";
     return value.slice(0, 16).replace(" ", "T");
 };
@@ -56,25 +56,26 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
     const [timeLastChanged, setTimeLastChanged] = useState<string | null>(null);
     const notificationTimers = useRef<Partial<Record<NotificationType, ReturnType<typeof setTimeout>>>>({});
 
-    // Calculate the next valid notification slot from the saved start time and interval.
+    // Calculate the next time for the notification to pop up from the saved start time and interval.
     const calculateNextValidTime = useCallback((startTime: string, endTime: string, interval: number): string => {
         const now = new Date();
         const startDate = new Date(startTime.replace(" ", "T"));
         const endDate = new Date(endTime.replace(" ", "T"));
 
-        const intervalMs = interval * 60 * 60 * 1000;
-        let nextDate = new Date(startDate.getTime() + intervalMs);
+        const intervalMilli = interval * 60 * 60 * 1000;
+        let nextDate = new Date(startDate.getTime() + intervalMilli);
 
         if (nextDate <= now) {
             while (nextDate <= now && nextDate < endDate) {
-                nextDate = new Date(nextDate.getTime() + intervalMs);
+                nextDate = new Date(nextDate.getTime() + intervalMilli);
             }
         }
-
         return formatDateTimeLocal(nextDate);
     }, []);
 
+
     // Cancel any pending timeout for a notification type before rescheduling it.
+    // Added by GPT-5.4 mini extension on VSCode to fix bug where notif pop up right away.
     const clearNotificationTimer = useCallback((type: NotificationType) => {
         const existingTimer = notificationTimers.current[type];
         if (existingTimer) {
@@ -83,7 +84,7 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
         }
     }, []);
 
-    // Add a notification to the visible queue only once.
+    // Add a notification to the queue only once.
     const queueNotification = useCallback((type: NotificationType, popUpTime: Date, interval: number, endTime: string) => {
         setNotificationQueue((currentQueue) => {
             if (currentQueue.some((item) => item.type === type)) return currentQueue;
@@ -92,6 +93,7 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
     }, []);
 
     // If the notification is still in the future, wait until its exact time before showing it.
+    // Added by GPT-5.4 mini extension on VSCode to fix bug where notif pop up right away.
     const scheduleNotification = useCallback((type: NotificationType, nextDate: Date, interval: number, endTime: string) => {
         clearNotificationTimer(type);
 
@@ -110,35 +112,32 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
     useEffect(() => {
         if (!userID) return;
 
-        async function syncDatabaseAndQueue() {
-            // Read the latest saved settings first so the handler always reacts to the current database state.
+        // Read and sync local data with database values.
+        async function initAndSyncQueue() {
             const { data: dbData } = await supabase.from('notificationSetting').select('*').eq('user_id', userID).maybeSingle();
             if (!dbData) return;
 
             const lastUpdated = dbData['last_updated'] ?? null;
-            const isMenuUpdate = lastUpdated !== timeLastChanged;
+            const isMenuUpdated = lastUpdated !== timeLastChanged;
 
-            // Clone the row so any recomputed next_time values can be written back without mutating the original result.
             const fullData = { ...dbData };
             let updateNeeded = false;
             const now = new Date();
 
             NOTIFICATION_TYPES.forEach((type) => {
                 const on = dbData[`${type}_on` as keyof NotificationSetting];
-                const startTime = normalizeDateTime(dbData[`${type}_start_time` as keyof NotificationSetting] as string);
-                const endTime = normalizeDateTime(dbData[`${type}_end_time` as keyof NotificationSetting] as string);
+                const startTime = formatDateTimeData(dbData[`${type}_start_time` as keyof NotificationSetting] as string);
+                const endTime = formatDateTimeData(dbData[`${type}_end_time` as keyof NotificationSetting] as string);
                 const interval = dbData[`${type}_interval` as keyof NotificationSetting] ? Number(dbData[`${type}_interval` as keyof NotificationSetting]) : 2;
-                let nextTime = normalizeDateTime(dbData[`${type}_next_time` as keyof NotificationSetting] as string | null);
+                let nextTime = formatDateTimeData(dbData[`${type}_next_time` as keyof NotificationSetting] as string | null);
 
-                // Turn off any old timer for this type before deciding whether it needs to be rescheduled.
                 clearNotificationTimer(type);
 
                 if (!on || !endTime || !startTime) return;
 
-                const isCorrupted = !nextTime || nextTime.includes("Z") || nextTime.includes(".");
+                const isWrongFormat = !nextTime || nextTime.includes("Z") || nextTime.includes(".");
 
-                // If the settings changed or the stored next_time looks invalid, rebuild it from the saved window.
-                if (isMenuUpdate || isCorrupted || !nextTime) {
+                if (isMenuUpdated || isWrongFormat || !nextTime) {
                     nextTime = calculateNextValidTime(startTime, endTime, interval);
                     fullData[`${type}_next_time`] = nextTime;
                     updateNeeded = true;
@@ -147,7 +146,6 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
                 const nextDate = new Date(nextTime.replace(" ", "T"));
                 const endDate = new Date(endTime.replace(" ", "T"));
 
-                // Fire immediately when the scheduled time has already arrived, otherwise set a timeout for it.
                 if (now >= nextDate && now <= endDate) {
                     queueNotification(type, nextDate, interval, endTime);
                     return;
@@ -163,44 +161,47 @@ export default function GlobalNotificationHandler({ userID }: { userID: string }
             }
 
             if (updateNeeded) {
-                // Persist any repaired next_time values so the next check uses the fixed schedule.
                 await supabase.from('notificationSetting').upsert(fullData, { onConflict: 'user_id' });
             }
         }
+        initAndSyncQueue();
 
-        // Poll as a fallback so settings changes and missed timers still get corrected.
-        syncDatabaseAndQueue();
-
-        const timer = setInterval(syncDatabaseAndQueue, 30000);
+        const timer = setInterval(initAndSyncQueue, 30000);
         return () => {
-            // Clean up both the polling loop and any pending popup timers on unmount.
             clearInterval(timer);
             NOTIFICATION_TYPES.forEach((type) => clearNotificationTimer(type));
         };
 
     }, [userID, timeLastChanged, supabase, clearNotificationTimer, scheduleNotification, calculateNextValidTime, queueNotification]);
 
-    async function handleCloseNotif(type: string) {
-        // Remove the current popup from the screen before calculating the next occurrence.
+    // handle removing closed notifs from queue and calculations for the next notif pop up time after user closes it.
+    async function handleCloseNotif(type: NotificationType) {
         const targetedNotif = notificationQueue.find(item => item.type === type);
 
         setNotificationQueue((currentQueue) => currentQueue.filter((item) => item.type !== type));
+        clearNotificationTimer(type);
         if (!userID || !targetedNotif) return;
 
-        // Re-read the row so the upsert keeps every other setting intact.
         const { data: dbData } = await supabase.from('notificationSetting').select('*').eq('user_id', userID).maybeSingle();
         if (!dbData) return;
 
-        // After closing a notification, schedule the next one from the current moment.
         const now = new Date();
         const nextDate = new Date(now.getTime() + targetedNotif.interval * 60 * 60 * 1000);
 
-        const nextTimeStr = formatDateTimeLocal(nextDate);
+        const fullSettingsData = { ...dbData };
 
-        const fullPayloadUpdate = { ...dbData };
-        fullPayloadUpdate[`${type}_next_time`] = nextTimeStr;
+        const endTime = formatDateTimeData(dbData[`${type}_end_time` as keyof NotificationSetting] as string);
+        const endDate = endTime ? new Date(endTime.replace(" ", "T")) : null;
 
-        await supabase.from('notificationSetting').upsert(fullPayloadUpdate, { onConflict: 'user_id' });
+        if (endDate && nextDate.getTime() > endDate.getTime()) {
+            fullSettingsData[`${type}_next_time`] = null;
+        } else {
+            const nextTimeFormatted = formatDateTimeLocal(nextDate);
+            fullSettingsData[`${type}_next_time`] = nextTimeFormatted;
+            scheduleNotification(type, nextDate, targetedNotif.interval, endTime || "");
+        }
+
+        await supabase.from('notificationSetting').upsert(fullSettingsData, { onConflict: 'user_id' });
     }
 
     if (notificationQueue.length === 0) return null;
