@@ -1,7 +1,6 @@
 'use client'
 import Image from "next/image"
-import { useRef, useState, useEffect, use } from "react";
-
+import { useRef, useState, useEffect } from "react";
 /**
  * Creating different props using type
  * Adapted from Gemini 3 fast model
@@ -125,9 +124,6 @@ export default function Notification(props: NotificationProps) {
                         </div>
                         <div className="flex">
                             <button className="bg-gray-500 hover:bg-gray-600 text-white rounded-xl grow p-1 pr-2 pl-2 mb-2 grow">View nearby cafes</button>
-                        </div>
-                        <div className="flex">
-                            <button className="bg-gray-500 hover:bg-gray-600 text-white rounded-xl grow p-1 pr-2 pl-2 mb-2 grow">View nearby grocery stores</button>
                         </div>
                     </>
                 )}
