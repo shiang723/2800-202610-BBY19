@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { createClientForServerComponent } from "@/lib/supabase/server";
-// import GlobalNotificationHandler from "@/components/GlobalNotificationHandler";
+import GlobalNotificationHandler from "@/components/GlobalNotificationHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,26 +24,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const supabase = await createClientForServerComponent();
-  // const data = await supabase.auth.getUser();
-  // const user = data?.data?.user;
-
-  // let userNotifSetting = null;
-  // if (user) {
-  //   const notifSettingData = await supabase
-  //     .from('notificationSetting')
-  //     .select()
-  //     .eq('user_id', user.id);
-  //   userNotifSetting = notifSettingData;
-  // }
-
+  const supabase = await createClientForServerComponent();
+  const { data: { user } } = await supabase.auth.getUser();
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}
-        {/* <GlobalNotificationHandler userID={user?.id} userSettings={userNotifSetting} /> */}
+        {user && (<GlobalNotificationHandler userID={user?.id} />)}
       </body>
     </html>
   );
