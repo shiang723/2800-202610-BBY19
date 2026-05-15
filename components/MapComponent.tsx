@@ -72,23 +72,18 @@ function buildHeatPoints(
     if (geom.type === "Polygon") {
       centroid = polygonCentroid(geom.coordinates[0] as number[][]);
     } else if (geom.type === "MultiPolygon") {
-      // Use the first (usually largest) ring
       centroid = polygonCentroid(geom.coordinates[0][0] as number[][]);
     } else {
       continue;
     }
 
-    // Coastal (West) is typically cooler, Inland (East) is hotter
-    // Downtown Vancouver longitude is roughly -123.12
     const lonOffset = centroid[0] - (-123.12);
 
-    // EXAGGERATED spatial gradient so multiple colors are visible across the city at once
-    const tempGradient = lonOffset * 50; 
+    const tempGradient = lonOffset * 50;
     const uvGradient = lonOffset * 15;
 
-    // Tiny deterministic jitter per neighbourhood
     const seed =
-      (centroid[0] * 1000 + centroid[1] * 1000) % 1; // 0–1 pseudo-random
+      (centroid[0] * 1000 + centroid[1] * 1000) % 1;
 
     let weight: number;
 
@@ -362,7 +357,6 @@ async function setupHeatmap(
     const response = await fetch("/data/vancouver-neighborhoods.json");
     const data: GeoJSON.FeatureCollection = await response.json();
 
-    // Store in ref so updateHeatmap can read it synchronously later
     boundariesRef.current = data;
 
     map.addSource("neighborhood-heat-src", {
@@ -395,8 +389,6 @@ async function setupHeatmap(
   } catch (error) {
     console.error("Error setting up neighbourhood heatmap:", error);
   } finally {
-    // Always call onReady — even if addLayer threw, boundaries are loaded
-    // and updateHeatmap's getLayer() guard handles any missing layer safely.
     onReady();
   }
 }
@@ -421,11 +413,9 @@ function updateHeatmap(
     return;
   }
 
-  // Rebuild weighted point features
   const points = buildHeatPoints(boundaries, mode, weatherData);
   (map.getSource("neighborhood-heat-src") as maplibregl.GeoJSONSource).setData(points);
 
-  // Swap colour ramp based on mode
   if (mode === "weather") {
     map.setPaintProperty("neighborhood-heat", "circle-color", [
       "interpolate",
@@ -527,29 +517,23 @@ export default function MapComponent({
   useEffect(() => {
     if (!forecastData || !forecastData.current) return;
 
-    // Use the real current weather as the baseline average
     const baseTemp = forecastData.current.temp;
     const baseUv = forecastData.current.uvi;
 
     const date = dateInstance.current;
     const hour = date.getHours() + date.getMinutes() / 60;
 
-    // Simulate a pronounced diurnal temperature curve so changes are highly visible
-    // Peak temp at 3 PM (15.0), lowest at 4 AM (4.0)
     const tempPhase = ((hour - 15) / 24) * Math.PI * 2;
-    const simulatedTemp = baseTemp + Math.cos(tempPhase) * 8; // +/- 8 degrees swing
+    const simulatedTemp = baseTemp + Math.cos(tempPhase) * 8;
 
-    // Simulate UV curve: peaks at 1 PM (13.0), zero at night
     let simulatedUv = 0;
     if (hour > 6 && hour < 20) {
-      // Scale cosine from -PI/2 (6am) to PI/2 (8pm)
       const uvPhase = ((hour - 13) / 7) * (Math.PI / 2);
-      const peakUv = Math.max(baseUv, 6); // Ensure there's a good peak for visual effect
+      const peakUv = Math.max(baseUv, 6);
       simulatedUv = Math.cos(uvPhase) * peakUv;
     }
 
     setWeatherData((prev) => {
-      // Prevent unnecessary updates if practically the same
       if (!prev || Math.abs(prev.temp - simulatedTemp) > 0.1 || Math.abs(prev.uv - simulatedUv) > 0.1) {
         return { temp: simulatedTemp, uv: Math.max(0, simulatedUv) };
       }
@@ -680,6 +664,27 @@ export default function MapComponent({
           onModeChange={setHeatmapMode}
         />
       </div>
+
+      {heatmapMode !== "none" && (
+        <div className="absolute bottom-16 right-4 md:bottom-20 md:right-6 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 w-48 transition-all">
+          <p className="font-bold mb-2">
+            {heatmapMode === "weather" ? "Temperature (°C)" : "UV Index"}
+          </p>
+          <div
+            className="w-full h-3 rounded"
+            style={{
+              background: heatmapMode === "weather"
+                ? "linear-gradient(to right, #abd9e9 0%, #abd9e9 20%, #ffffbf 40%, #fdae61 65%, #f46d43 85%, #d73027 100%)"
+                : "linear-gradient(to right, #4dac26 0%, #4dac26 20%, #f1e71f 40%, #f77f00 60%, #d62728 80%, #6a0dad 100%)"
+            }}
+          />
+          <div className="flex justify-between mt-1 opacity-80 text-[10px] font-medium">
+            <span>{heatmapMode === "weather" ? "≤ 10°" : "0"}</span>
+            <span>{heatmapMode === "weather" ? "17°" : "4"}</span>
+            <span>{heatmapMode === "weather" ? "≥ 25°" : "8+"}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
