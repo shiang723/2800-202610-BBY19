@@ -45,6 +45,78 @@ const bbox: [number, number, number, number] = [
   -123.28753233533254, 49.17524950157297, -122.9801907901657, 49.33148788422633,
 ]; // Vancouver bounding box
 
+function polygonCentroid(coords: number[][]): [number, number] {
+  let x = 0,
+    y = 0;
+  for (const [lng, lat] of coords) {
+    x += lng;
+    y += lat;
+  }
+  return [x / coords.length, y / coords.length];
+}
+
+function buildHeatPoints(
+  boundaries: GeoJSON.FeatureCollection,
+  mode: "weather" | "uv",
+  weatherData: { temp: number; uv: number },
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+
+  for (const feature of boundaries.features) {
+    const geom = feature.geometry as
+      | GeoJSON.Polygon
+      | GeoJSON.MultiPolygon;
+
+    let centroid: [number, number];
+
+    if (geom.type === "Polygon") {
+      centroid = polygonCentroid(geom.coordinates[0] as number[][]);
+    } else if (geom.type === "MultiPolygon") {
+      // Use the first (usually largest) ring
+      centroid = polygonCentroid(geom.coordinates[0][0] as number[][]);
+    } else {
+      continue;
+    }
+
+    // Coastal (West) is typically cooler, Inland (East) is hotter
+    // Downtown Vancouver longitude is roughly -123.12
+    const lonOffset = centroid[0] - (-123.12);
+
+    // EXAGGERATED spatial gradient so multiple colors are visible across the city at once
+    const tempGradient = lonOffset * 50; 
+    const uvGradient = lonOffset * 15;
+
+    // Tiny deterministic jitter per neighbourhood
+    const seed =
+      (centroid[0] * 1000 + centroid[1] * 1000) % 1; // 0–1 pseudo-random
+
+    let weight: number;
+
+    if (mode === "weather") {
+      const localTemp = weatherData.temp + tempGradient + (seed - 0.5) * 2;
+      // Tighter normalization range (10 °C to 25 °C) makes colors shift much faster and more dramatically
+      const base = Math.min(Math.max((localTemp - 10) / 15, 0), 1);
+      weight = base;
+    } else {
+      const localUv = weatherData.uv + uvGradient + (seed - 0.5) * 1.5;
+      // Normalise UV 0 to 8 for more dramatic color variation
+      const base = Math.min(Math.max(localUv / 8, 0), 1);
+      weight = base;
+    }
+
+    features.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: centroid },
+      properties: {
+        name: feature.properties?.name ?? "",
+        weight,
+      },
+    });
+  }
+
+  return { type: "FeatureCollection", features };
+}
+
 function setupSearchbar(map: maplibregl.Map) {
   const geocoder = new GeocodingControl({
     apiKey: maptilerApiKey,
@@ -281,6 +353,109 @@ async function setupCityData(map: maplibregl.Map) {
   }
 }
 
+async function setupHeatmap(
+  map: maplibregl.Map,
+  boundariesRef: React.MutableRefObject<GeoJSON.FeatureCollection | null>,
+  onReady: () => void,
+) {
+  try {
+    const response = await fetch("/data/vancouver-neighborhoods.json");
+    const data: GeoJSON.FeatureCollection = await response.json();
+
+    // Store in ref so updateHeatmap can read it synchronously later
+    boundariesRef.current = data;
+
+    map.addSource("neighborhood-heat-src", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+
+    const beforeId = map.getLayer("3d-buildings") ? "3d-buildings" : undefined;
+
+    map.addLayer(
+      {
+        id: "neighborhood-heat",
+        type: "circle",
+        source: "neighborhood-heat-src",
+        layout: { visibility: "none" },
+        paint: {
+          "circle-radius": [
+            "interpolate", ["linear"], ["zoom"],
+            10, 150,
+            13, 300,
+            15, 600,
+          ],
+          "circle-blur": 1.5,
+          "circle-opacity": 0.6,
+          "circle-color": "transparent",
+        },
+      },
+      beforeId,
+    );
+  } catch (error) {
+    console.error("Error setting up neighbourhood heatmap:", error);
+  } finally {
+    // Always call onReady — even if addLayer threw, boundaries are loaded
+    // and updateHeatmap's getLayer() guard handles any missing layer safely.
+    onReady();
+  }
+}
+
+function updateHeatmap(
+  map: maplibregl.Map,
+  mode: HeatmapMode,
+  weatherData: { temp: number; uv: number } | null,
+  boundariesRef: React.MutableRefObject<GeoJSON.FeatureCollection | null>,
+) {
+  if (!map.getLayer("neighborhood-heat")) return;
+
+  if (mode === "none" || !weatherData) {
+    map.setLayoutProperty("neighborhood-heat", "visibility", "none");
+    return;
+  }
+
+  const boundaries = boundariesRef.current;
+
+  if (!boundaries) {
+    console.warn("Neighbourhood boundaries not yet loaded.");
+    return;
+  }
+
+  // Rebuild weighted point features
+  const points = buildHeatPoints(boundaries, mode, weatherData);
+  (map.getSource("neighborhood-heat-src") as maplibregl.GeoJSONSource).setData(points);
+
+  // Swap colour ramp based on mode
+  if (mode === "weather") {
+    map.setPaintProperty("neighborhood-heat", "circle-color", [
+      "interpolate",
+      ["linear"],
+      ["get", "weight"],
+      0, "#abd9e9", // cool blue
+      0.2, "#abd9e9", // cool blue
+      0.4, "#ffffbf", // mild yellow
+      0.65, "#fdae61", // warm orange
+      0.85, "#f46d43", // hot orange-red
+      1, "#d73027", // very hot red
+    ]);
+  } else {
+    // UV index colour ramp (WHO scale: green → yellow → orange → red → violet)
+    map.setPaintProperty("neighborhood-heat", "circle-color", [
+      "interpolate",
+      ["linear"],
+      ["get", "weight"],
+      0, "#4dac26", // low UV green
+      0.2, "#4dac26", // low UV green
+      0.4, "#f1e71f", // moderate yellow
+      0.6, "#f77f00", // high orange
+      0.8, "#d62728", // very high red
+      1, "#6a0dad", // extreme purple
+    ]);
+  }
+
+  map.setLayoutProperty("neighborhood-heat", "visibility", "visible");
+}
+
 export default function MapComponent({
   activeFilter,
 }: {
@@ -290,10 +465,13 @@ export default function MapComponent({
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
   const dateInstance = useRef<Date>(new Date());
+  const neighbourhoodBoundaries = useRef<GeoJSON.FeatureCollection | null>(null);
 
   const [displayTime, setDisplayTime] = useState("");
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("none");
   const [weatherData, setWeatherData] = useState<{ temp: number; uv: number } | null>(null);
+  const [forecastData, setForecastData] = useState<any>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const changeTime = (hours: number) => {
     if (!shadeInstance.current) return;
@@ -328,22 +506,56 @@ export default function MapComponent({
   }, []);
 
   useEffect(() => {
-  const fetchWeather = async () => {
-    const key = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
-    // Vancouver coordinates
-    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=49.2827&lon=-123.1207&units=metric&appid=${key}`;
+    const fetchWeather = async () => {
+      const key = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
+      // Vancouver coordinates
+      const url = `https://api.openweathermap.org/data/3.0/onecall?lat=49.2827&lon=-123.1207&units=metric&appid=${key}`;
 
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      setWeatherData({ temp: data.current.temp, uv: data.current.uvi });
-      console.log("Weather data loaded successfully");
-    } catch (e) {
-      console.error("Weather Fetch Error:", e);
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        setForecastData(data);
+        setWeatherData({ temp: data.current.temp, uv: data.current.uvi });
+        console.log("Weather data loaded successfully");
+      } catch (e) {
+        console.error("Weather Fetch Error:", e);
+      }
+    };
+    fetchWeather();
+  }, []);
+
+  useEffect(() => {
+    if (!forecastData || !forecastData.current) return;
+
+    // Use the real current weather as the baseline average
+    const baseTemp = forecastData.current.temp;
+    const baseUv = forecastData.current.uvi;
+
+    const date = dateInstance.current;
+    const hour = date.getHours() + date.getMinutes() / 60;
+
+    // Simulate a pronounced diurnal temperature curve so changes are highly visible
+    // Peak temp at 3 PM (15.0), lowest at 4 AM (4.0)
+    const tempPhase = ((hour - 15) / 24) * Math.PI * 2;
+    const simulatedTemp = baseTemp + Math.cos(tempPhase) * 8; // +/- 8 degrees swing
+
+    // Simulate UV curve: peaks at 1 PM (13.0), zero at night
+    let simulatedUv = 0;
+    if (hour > 6 && hour < 20) {
+      // Scale cosine from -PI/2 (6am) to PI/2 (8pm)
+      const uvPhase = ((hour - 13) / 7) * (Math.PI / 2);
+      const peakUv = Math.max(baseUv, 6); // Ensure there's a good peak for visual effect
+      simulatedUv = Math.cos(uvPhase) * peakUv;
     }
-  };
-  fetchWeather();
-}, []);
+
+    setWeatherData((prev) => {
+      // Prevent unnecessary updates if practically the same
+      if (!prev || Math.abs(prev.temp - simulatedTemp) > 0.1 || Math.abs(prev.uv - simulatedUv) > 0.1) {
+        return { temp: simulatedTemp, uv: Math.max(0, simulatedUv) };
+      }
+      return prev;
+    });
+  }, [displayTime, forecastData]);
 
   useEffect(() => {
     let mapMounted = true;
@@ -402,6 +614,7 @@ export default function MapComponent({
       setupShadeMap(map, shadeInstance, dateInstance);
       setupCityData(map);
       loadYelpData(map);
+      setupHeatmap(map, neighbourhoodBoundaries, () => setMapReady(true));
     });
 
     return () => {
@@ -446,6 +659,13 @@ export default function MapComponent({
     }
   }, [activeFilter]);
 
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !mapReady) return;
+
+    updateHeatmap(map, heatmapMode, weatherData, neighbourhoodBoundaries);
+  }, [heatmapMode, weatherData, mapReady]);
+
   return (
     <div className="relative">
       <div
@@ -455,11 +675,11 @@ export default function MapComponent({
       <TimeShiftBtns displayTime={displayTime} changeTime={changeTime} />
 
       <div className="absolute top-32 right-4 md:top-28 md:right-6 z-[50] pointer-events-auto">
-    <WeatherUvBtns 
-      mode={heatmapMode} 
-      onModeChange={setHeatmapMode} 
-    />
-  </div>
+        <WeatherUvBtns
+          mode={heatmapMode}
+          onModeChange={setHeatmapMode}
+        />
+      </div>
     </div>
   );
 }
