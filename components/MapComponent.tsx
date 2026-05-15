@@ -636,7 +636,7 @@ export default function MapComponent({
 
           map.flyTo({ center: [longitude, latitude], zoom: 15 });
         },
-        (err) => console.error("Location error:", err),
+        (err) => console.log("Location error:" + err.message),
         { enableHighAccuracy: true },
       );
     };
@@ -692,7 +692,7 @@ export default function MapComponent({
         const res = await fetch(url);
         const data = await res.json();
         setForecastData(data);
-        setWeatherData({ temp: data.current.temp, uv: data.current.uvi });
+        setWeatherData({ temp: data?.current?.temp, uv: data?.current?.uvi });
         console.log("Weather data loaded successfully");
       } catch (e) {
         console.error("Weather Fetch Error:", e);
