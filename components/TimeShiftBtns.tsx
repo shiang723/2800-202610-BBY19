@@ -1,6 +1,6 @@
 export default function TimeShiftBtns({ displayTime, changeTime }: { displayTime: string; changeTime: (hours: number) => void }) {
     return (
-        <div className="fixed bottom-25 left-0 right-0 flex justify-center bg-opacity-50 rounded">
+        <div className="fixed bottom-17 left-0 right-0 flex justify-center bg-opacity-50 rounded">
             <div className="flex justify-center">
                 <button
                     onClick={() => changeTime(-0.5)}

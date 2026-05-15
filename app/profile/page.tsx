@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 
 const supabase = createClientForClientComponent();
 
-type SupabaseUser= {
+type SupabaseUser = {
   id: string;
   email: string | null;
   user_metadata?: {
@@ -37,7 +37,6 @@ type FavoriteLocation = {
 };
 
 export default function Profile() {
-
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
 
@@ -140,58 +139,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* user information - dyanamic infor from Supabase */}
-        <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700 ">
-          <div className="space-y-3">
-            {/* Email */}
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
-                <Mail size={24} className="mr-3" />
-              </span>
-              <p>{user?.email || "Not logged in"}</p>
-            </div>
-
-            {/* profile */}
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
-                <User size={24} className="mr-3" />
-              </span>
-              <p className="flex-1">
-                {typeof user?.user_metadata?.aboutMe === "string" &&
-                user.user_metadata.aboutMe.trim()
-                  ? user.user_metadata.aboutMe
-                  : "Write something about you"}
-              </p>
-            </div>
-
-            {/* Settings */}
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
-                <Settings size={24} className="mr-3" />
-              </span>
-              <p>Account Settings</p>
-            </div>
-
-            {/* help */}
-            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md">
-              <span className="font-semibold min-w-[60px]">
-                <HelpCircle size={24} className="mr-3" />
-              </span>
-              <p>Tutorial</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 bg-white rounded-xl overflow-hidden shadow">
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center px-4 py-3 text-red-500 transition-colors hover:bg-blue-100 rounded-md"
-          >
-            <LogOut size={18} className="mr-3" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-
         {/* collect the location from api*/}
         <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
           Saved Locations
@@ -230,6 +177,100 @@ export default function Profile() {
             </div>
           ))
         )}
+
+        {/* user information - dyanamic infor from Supabase */}
+        <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700 ">
+          <div className="space-y-3">
+            {/* Email */}
+            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+              <span className="font-semibold min-w-[60px]">
+                <Mail size={24} className="mr-3" />
+              </span>
+              <p>{user?.email || "Not logged in"}</p>
+            </div>
+
+            {/* profile */}
+            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+              <span className="font-semibold min-w-[60px]">
+                <User size={24} className="mr-3" />
+              </span>
+              <p className="flex-1">
+                {typeof user?.user_metadata?.aboutMe === "string" &&
+                user.user_metadata.aboutMe.trim()
+                  ? user.user_metadata.aboutMe
+                  : "Write something about you"}
+              </p>
+            </div>
+
+            {/* Settings */}
+            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+              <button
+                onClick={handleSignOut}
+                className="font-semibold min-w-[60px]"
+              >
+                <Settings size={24} className="mr-3" />
+              </button>
+              <p>Account Settings</p>
+            </div>
+
+            {/* help */}
+            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md">
+              <span className="font-semibold min-w-[60px]">
+                <HelpCircle size={24} className="mr-3" />
+              </span>
+              <p>Tutorial</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-white rounded-xl overflow-hidden shadow">
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center px-4 py-3 text-red-500 transition-colors hover:bg-blue-100 rounded-md"
+          >
+            <LogOut size={18} className="mr-3" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+
+        {/* collect the location from api*/}
+        {/* <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
+          Saved Locations
+        </p> */}
+
+        {/* {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : favorites.length === 0 ? (
+          <div className="bg-gray-200 rounded-xl p-8 text-center text-gray-500 shadow">
+            <p>No saved locations yet</p>
+            <p className="text-sm mt-2">
+              Go to map and click ❤️ to save places you like!
+            </p>
+          </div>
+        ) : (
+          favorites.map((location) => (
+            <div
+              key={location.id}
+              className="bg-gray-300 rounded-xl border border-black text-black text-lg p-3 mb-3 flex justify-between items-center shadow"
+            >
+              <div className="flex-1">
+                <p className="font-semibold">{location.place_name}</p>
+                <p className="text-sm text-gray-700">
+                  {location.place_address || "Address not available"}
+                </p>
+                {location.place_rating && (
+                  <p className="text-sm">⭐ {location.place_rating} / 5</p>
+                )}
+              </div>
+              <button
+                onClick={() =>
+                  handleRemoveFavorite(location.place_id, location.place_name)
+                }
+                className="bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors"
+              ></button>
+            </div>
+          ))
+        )} */}
       </div>
       <Navbar />
     </main>

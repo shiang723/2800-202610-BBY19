@@ -39,7 +39,7 @@ const dataTables = [
       feature.properties?.park_name !== null,
   },
   { id: "cafes", label: "Cafes", minZoom: 14.35 },
-  { id: "saved-locations", label: "Saved" }
+  { id: "saved-locations", label: "Saved" },
 ];
 
 const bbox: [number, number, number, number] = [
@@ -64,9 +64,7 @@ function buildHeatPoints(
   const features: GeoJSON.Feature[] = [];
 
   for (const feature of boundaries.features) {
-    const geom = feature.geometry as
-      | GeoJSON.Polygon
-      | GeoJSON.MultiPolygon;
+    const geom = feature.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
     let centroid: [number, number];
 
@@ -78,13 +76,12 @@ function buildHeatPoints(
       continue;
     }
 
-    const lonOffset = centroid[0] - (-123.12);
+    const lonOffset = centroid[0] - -123.12;
 
     const tempGradient = lonOffset * 50;
     const uvGradient = lonOffset * 15;
 
-    const seed =
-      (centroid[0] * 1000 + centroid[1] * 1000) % 1;
+    const seed = (centroid[0] * 1000 + centroid[1] * 1000) % 1;
 
     let weight: number;
 
@@ -155,7 +152,7 @@ function setupSearchbar(map: maplibregl.Map) {
   document
     .querySelector("maptiler-geocoder-feature-item")
     ?.shadowRoot?.appendChild(searchDropdownStyle);
-};
+}
 
 function setupShadeMap(
   map: maplibregl.Map,
@@ -234,16 +231,14 @@ function setupShadeMap(
     intensity: 0.4,
     position: [1, 210, 30],
   });
-};
+}
 
 async function setupCityData(
   map: maplibregl.Map,
   savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
   setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>,
-  dataCache: React.RefObject<Record<string, GeoJSON.Feature[]>>
+  dataCache: React.RefObject<Record<string, GeoJSON.Feature[]>>,
 ) {
-
-
   // Loop through the data tables and add a layer of points for each dataset
   for (const dataSet of dataTables) {
     // Skips the cafe dataset since it's layer is already handled by yelpLoader function
@@ -299,18 +294,18 @@ async function setupCityData(
 
     showPopup(map, dataSet.id, savedLocationsRef, setSavedLocations);
 
-    console.log(`Loaded ${idData.features.length} ${dataSet.id} from City of Vancouver`)
-
+    console.log(
+      `Loaded ${idData.features.length} ${dataSet.id} from City of Vancouver`,
+    );
   }
-
-};
+}
 
 async function setupSavedData(
   map: maplibregl.Map,
   savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
   setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>,
 ) {
-  map.addSource('saved-locations', {
+  map.addSource("saved-locations", {
     type: "geojson",
     data: {
       type: "FeatureCollection",
@@ -329,25 +324,30 @@ async function setupSavedData(
       "icon-image": [
         "match",
         ["get", "source"], // Match the values according to source property
-        "parks", "parks", //  if source = parks, then icon-image = parks
-        "community-centres", "community-centres",
-        "drinking-fountains", "drinking-fountains",
-        "public-washrooms", "public-washrooms",
-        "cafes", "cafes",
-        "saved-locations"
+        "parks",
+        "parks", //  if source = parks, then icon-image = parks
+        "community-centres",
+        "community-centres",
+        "drinking-fountains",
+        "drinking-fountains",
+        "public-washrooms",
+        "public-washrooms",
+        "cafes",
+        "cafes",
+        "saved-locations",
       ],
       "icon-size": [
         "match",
-        ["get", "source"], // 
-        "public-washrooms", 0.06,
-        0.05
+        ["get", "source"], //
+        "public-washrooms",
+        0.06,
+        0.05,
       ],
     },
   });
 
-  showPopup(map, "saved-locations", savedLocationsRef, setSavedLocations)
-
-};
+  showPopup(map, "saved-locations", savedLocationsRef, setSavedLocations);
+}
 
 export function buildPopupHTML(dataSetId: string, properties: any): string {
   if (dataSetId === "parks") {
@@ -408,7 +408,7 @@ export function showPopup(
   map: maplibregl.Map,
   source: string,
   savedLocationsRef: React.RefObject<GeoJSON.Feature[]>,
-  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>
+  setSavedLocations: React.Dispatch<React.SetStateAction<GeoJSON.Feature[]>>,
 ) {
   // Adapted from MapLibre popup example: https://maplibre.org/maplibre-gl-js/docs/examples/display-a-popup-on-click/
 
@@ -423,20 +423,19 @@ export function showPopup(
     ).coordinates.slice();
     const properties = location.properties;
 
-    const popupContent = document.createElement('div');
+    const popupContent = document.createElement("div");
     popupContent.innerHTML = buildPopupHTML(properties.source, properties);
-    const saveBtn = document.createElement('img');
+    const saveBtn = document.createElement("img");
     saveBtn.className = "w-6 h-6 mt-2 cursor-pointer";
 
     const isSaved = () =>
       savedLocationsRef.current.some(
-        (loc) => loc.properties?.id === properties?.id
+        (loc) => loc.properties?.id === properties?.id,
       );
 
     saveBtn.src = `/${isSaved() ? "saved" : "save"}-icon.png`;
 
     saveBtn.addEventListener("click", () => {
-
       const newLocation: GeoJSON.Feature = {
         type: "Feature",
         geometry: location.geometry as GeoJSON.Geometry,
@@ -444,13 +443,14 @@ export function showPopup(
       };
 
       if (isSaved()) {
-        setSavedLocations((prev) => prev.filter((loc) => loc.properties?.id !== properties.id));
+        setSavedLocations((prev) =>
+          prev.filter((loc) => loc.properties?.id !== properties.id),
+        );
         saveBtn.src = `/save-icon.png`;
       } else {
         setSavedLocations((prev) => [...prev, newLocation]);
         saveBtn.src = `/saved-icon.png`;
       }
-
     });
 
     popupContent.appendChild(saveBtn);
@@ -459,7 +459,6 @@ export function showPopup(
       .setLngLat(coordinates as [number, number])
       .setDOMContent(popupContent)
       .addTo(map);
-
   });
 
   // Change the cursor to a pointer when the mouse is over the places layer.
@@ -471,7 +470,6 @@ export function showPopup(
   map.on("mouseleave", source, () => {
     map.getCanvas().style.cursor = "";
   });
-
 }
 
 async function setupHeatmap(
@@ -500,10 +498,15 @@ async function setupHeatmap(
         layout: { visibility: "none" },
         paint: {
           "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            10, 150,
-            13, 300,
-            15, 600,
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            150,
+            13,
+            300,
+            15,
+            600,
           ],
           "circle-blur": 1.5,
           "circle-opacity": 0.6,
@@ -540,19 +543,27 @@ function updateHeatmap(
   }
 
   const points = buildHeatPoints(boundaries, mode, weatherData);
-  (map.getSource("neighborhood-heat-src") as maplibregl.GeoJSONSource).setData(points);
+  (map.getSource("neighborhood-heat-src") as maplibregl.GeoJSONSource).setData(
+    points,
+  );
 
   if (mode === "weather") {
     map.setPaintProperty("neighborhood-heat", "circle-color", [
       "interpolate",
       ["linear"],
       ["get", "weight"],
-      0, "#3982e0ff", // cool blue
-      0.2, "#34bce9ff", // cool blue
-      0.4, "#fdfd82ff", // mild yellow
-      0.65, "#fdae61", // warm orange
-      0.85, "#f46d43", // hot orange-red
-      1, "#d73027", // very hot red
+      0,
+      "#3982e0ff", // cool blue
+      0.2,
+      "#34bce9ff", // cool blue
+      0.4,
+      "#fdfd82ff", // mild yellow
+      0.65,
+      "#fdae61", // warm orange
+      0.85,
+      "#f46d43", // hot orange-red
+      1,
+      "#d73027", // very hot red
     ]);
   } else {
     // UV index colour ramp (WHO scale: green → yellow → orange → red → violet)
@@ -560,12 +571,18 @@ function updateHeatmap(
       "interpolate",
       ["linear"],
       ["get", "weight"],
-      0, "#4dac26", // low UV green
-      0.2, "#4dac26", // low UV green
-      0.4, "#f1e71f", // moderate yellow
-      0.6, "#f77f00", // high orange
-      0.8, "#d62728", // very high red
-      1, "#6a0dad", // extreme purple
+      0,
+      "#4dac26", // low UV green
+      0.2,
+      "#4dac26", // low UV green
+      0.4,
+      "#f1e71f", // moderate yellow
+      0.6,
+      "#f77f00", // high orange
+      0.8,
+      "#d62728", // very high red
+      1,
+      "#6a0dad", // extreme purple
     ]);
   }
 
@@ -581,11 +598,16 @@ export default function MapComponent({
   const mapInstance = useRef<maplibregl.Map | null>(null);
   const shadeInstance = useRef<ShadeMap | null>(null);
   const dateInstance = useRef<Date>(new Date());
-  const neighbourhoodBoundaries = useRef<GeoJSON.FeatureCollection | null>(null);
+  const neighbourhoodBoundaries = useRef<GeoJSON.FeatureCollection | null>(
+    null,
+  );
 
   const [displayTime, setDisplayTime] = useState("");
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("none");
-  const [weatherData, setWeatherData] = useState<{ temp: number; uv: number } | null>(null);
+  const [weatherData, setWeatherData] = useState<{
+    temp: number;
+    uv: number;
+  } | null>(null);
   const [forecastData, setForecastData] = useState<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const dataCache = useRef<Record<string, GeoJSON.Feature[]>>({});
@@ -612,7 +634,8 @@ export default function MapComponent({
           if (!userMarker) {
             userMarker = document.createElement("div");
             userMarker.id = "user-location-marker";
-            userMarker.className = "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+            userMarker.className =
+              "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
             new maplibregl.Marker({ element: userMarker })
               .setLngLat([longitude, latitude])
               .addTo(map);
@@ -705,7 +728,11 @@ export default function MapComponent({
     }
 
     setWeatherData((prev) => {
-      if (!prev || Math.abs(prev.temp - simulatedTemp) > 0.1 || Math.abs(prev.uv - simulatedUv) > 0.1) {
+      if (
+        !prev ||
+        Math.abs(prev.temp - simulatedTemp) > 0.1 ||
+        Math.abs(prev.uv - simulatedUv) > 0.1
+      ) {
         return { temp: simulatedTemp, uv: Math.max(0, simulatedUv) };
       }
       return prev;
@@ -778,13 +805,15 @@ export default function MapComponent({
     const map = mapInstance.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const savedSource = map.getSource("saved-locations") as maplibregl.GeoJSONSource;
+    const savedSource = map.getSource(
+      "saved-locations",
+    ) as maplibregl.GeoJSONSource;
     if (savedSource) {
       savedSource.setData({
         type: "FeatureCollection",
         features: savedLocations,
       });
-    };
+    }
 
     for (const dataSet of dataTables) {
       const source = map.getSource(dataSet.id) as maplibregl.GeoJSONSource;
@@ -798,7 +827,7 @@ export default function MapComponent({
           properties: {
             ...feature.properties,
             saved: savedLocations.some(
-              (loc) => loc.properties?.id === feature.properties?.id
+              (loc) => loc.properties?.id === feature.properties?.id,
             ),
           },
         })),
@@ -839,14 +868,12 @@ export default function MapComponent({
     <div className="relative">
       <div
         ref={mapContainer}
-        className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
+        // className="h-[calc(100dvh-65px)] w-full bg-zinc-200 dark:bg-zinc-800"
+        className="h-screen w-full bg-zinc-200 dark:bg-zinc-800"
       />
       <TimeShiftBtns displayTime={displayTime} changeTime={changeTime} />
 
-      <WeatherUvBtns
-        mode={heatmapMode}
-        onModeChange={setHeatmapMode}
-      />
+      <WeatherUvBtns mode={heatmapMode} onModeChange={setHeatmapMode} />
     </div>
   );
 }
