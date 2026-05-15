@@ -597,8 +597,43 @@ export default function MapComponent({
     savedLocationsRef.current = savedLocations;
   }, [savedLocations]);
 
+  // Handle custom navigation event
+  useEffect(() => {
+    const handleNav = () => {
+      const map = mapInstance.current;
+      if (!map) return;
 
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
 
+          // Reuse or create user location marker
+          let userMarker = document.getElementById("user-location-marker");
+          if (!userMarker) {
+            userMarker = document.createElement("div");
+            userMarker.id = "user-location-marker";
+            userMarker.className = "w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg";
+            new maplibregl.Marker({ element: userMarker })
+              .setLngLat([longitude, latitude])
+              .addTo(map);
+          }
+
+          map.flyTo({ center: [longitude, latitude], zoom: 15 });
+        },
+        (err) => console.error("Location error:", err),
+        { enableHighAccuracy: true },
+      );
+    };
+
+    window.addEventListener("trigger-navigation", handleNav);
+
+    // Trigger on mount to center the map immediately
+    setTimeout(() => {
+      if (mapInstance.current) handleNav();
+    }, 1000); // Small delay to ensure map is ready
+
+    return () => window.removeEventListener("trigger-navigation", handleNav);
+  }, []);
   const changeTime = (hours: number) => {
     if (!shadeInstance.current) return;
 
