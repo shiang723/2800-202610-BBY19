@@ -48,7 +48,7 @@ export default function WeatherToggleBtns({
       {mode !== "none" && (
         <>
           {/* Desktop Legend (Horizontal) */}
-          <div className="hidden md:block absolute bottom-20 right-6 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 w-48 transition-all">
+          <div className="hidden md:block absolute md:bottom-30 md:right-6 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 w-48 transition-all">
             <p className="font-bold mb-2">
               {mode === "weather" ? "Temperature (°C)" : "UV Index"}
             </p>
@@ -68,7 +68,7 @@ export default function WeatherToggleBtns({
           </div>
 
           {/* Mobile Legend (Vertical) */}
-          <div className="md:hidden absolute bottom-24 right-4 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 transition-all flex flex-col">
+          <div className="md:hidden absolute bottom-28 right-4 z-[50] pointer-events-auto bg-white/90 dark:bg-zinc-900/90 p-3 rounded-lg shadow-lg backdrop-blur-md border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 transition-all flex flex-col">
             <p className="font-bold mb-2 text-center text-[10px]">
               {mode === "weather" ? "Temp (°C)" : "UV"}
             </p>
