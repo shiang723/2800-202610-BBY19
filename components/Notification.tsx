@@ -1,7 +1,6 @@
 'use client'
 import Image from "next/image"
 import { useRef, useState, useEffect } from "react";
-
 /**
  * Creating different props using type
  * Adapted from Gemini 3 fast model
@@ -51,42 +50,56 @@ uvMap.set(10, veryHighMessage)
 
 export default function Notification(props: NotificationProps) {
     const { type } = props
-    const [open, setOpen] = useState(true);
-
+    const [open, setOpen] = useState(function () {
+        if (!props.timeOfNotif) return true;
+        return false;
+    });
     const currentModal = useRef<HTMLDialogElement>(null);
 
-    /**Fix backdrop not showing up behind modal bug.
+    /**Fix backdrop not showing up behind modal bug and setState synchronous error.
      * Adapted code from Gemini 3 fast
      * https://gemini.google.com/app 
      */
+
+    useEffect(() => {
+        if (!props.timeOfNotif) return;
+
+        const targetTime = new Date(props.timeOfNotif);
+        targetTime.setSeconds(0, 0);
+
+        const delay = targetTime.getTime() - new Date().getTime();
+
+        if (delay < 0) return;
+
+        const timerId = setTimeout(function () {
+            setOpen(true);
+        }, delay);
+
+        return function () {
+            clearTimeout(timerId);
+        };
+    }, [props.timeOfNotif])
 
     useEffect(() => {
         const dialog = currentModal.current;
         if (!dialog) return;
 
         if (open) {
-            dialog.showModal();
+            requestAnimationFrame(function () {
+                if (!dialog.open) {
+                    dialog.showModal();
+                }
+            });
+
         } else {
-            dialog.close();
+            if (dialog.open) {
+                dialog.close();
+            }
         }
     }, [open]);
     //End of adapted code.
 
-    if (!open) return null;
-
-    if (props.timeOfNotif) {
-        const now = new Date();
-        const sameTime =
-            now.getFullYear() === props.timeOfNotif.getFullYear() &&
-            now.getMonth() === props.timeOfNotif.getMonth() &&
-            now.getDate() === props.timeOfNotif.getDate() &&
-            now.getHours() === props.timeOfNotif.getHours() &&
-            now.getMinutes() === props.timeOfNotif.getMinutes();
-        if (!sameTime) return null;
-    }
-
-    const uvMessage = (type == "uv" && props.uvIndex) ? ((props.uvIndex ?? 0 > 10) ? extremeMessage : uvMap.get(props.uvIndex)) : null
-
+    const uvMessage = (type == "uv" && props.uvIndex) ? ((props.uvIndex > 10) ? extremeMessage : uvMap.get(props.uvIndex)) : null
     return (
         <div id="notification-container">
             <dialog ref={currentModal} id="notification" className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto">
@@ -111,9 +124,6 @@ export default function Notification(props: NotificationProps) {
                         </div>
                         <div className="flex">
                             <button className="bg-gray-500 hover:bg-gray-600 text-white rounded-xl grow p-1 pr-2 pl-2 mb-2 grow">View nearby cafes</button>
-                        </div>
-                        <div className="flex">
-                            <button className="bg-gray-500 hover:bg-gray-600 text-white rounded-xl grow p-1 pr-2 pl-2 mb-2 grow">View nearby grocery stores</button>
                         </div>
                     </>
                 )}
