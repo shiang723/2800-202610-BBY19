@@ -76,22 +76,15 @@ function buildHeatPoints(
       continue;
     }
 
-    const lonOffset = centroid[0] - -123.12;
-
-    const tempGradient = lonOffset * 50;
-    const uvGradient = lonOffset * 15;
-
-    const seed = (centroid[0] * 1000 + centroid[1] * 1000) % 1;
-
     let weight: number;
 
     if (mode === "weather") {
-      const localTemp = weatherData.temp + tempGradient + (seed - 0.5) * 2;
+      const localTemp = weatherData.temp;
       // Tighter normalization range (10 °C to 25 °C) makes colors shift much faster and more dramatically
       const base = Math.min(Math.max((localTemp - 10) / 15, 0), 1);
       weight = base;
     } else {
-      const localUv = weatherData.uv + uvGradient + (seed - 0.5) * 1.5;
+      const localUv = weatherData.uv;
       // Normalise UV 0 to 8 for more dramatic color variation
       const base = Math.min(Math.max(localUv / 8, 0), 1);
       weight = base;
@@ -711,29 +704,31 @@ export default function MapComponent({
   useEffect(() => {
     if (!forecastData || !forecastData.current) return;
 
-    const baseTemp = forecastData.current.temp;
-    const baseUv = forecastData.current.uvi;
-
     const date = dateInstance.current;
-    const hour = date.getHours() + date.getMinutes() / 60;
+    const targetTimeSecs = Math.floor(date.getTime() / 1000);
 
-    const tempPhase = ((hour - 15) / 24) * Math.PI * 2;
-    const simulatedTemp = baseTemp + Math.cos(tempPhase) * 8;
+    let closestData = forecastData.current;
+    // Current might not have a 'dt' if it was mocked, but openweather always has dt.
+    // If dt is missing, default to a large diff.
+    let minDiff = closestData.dt ? Math.abs(targetTimeSecs - closestData.dt) : Infinity;
 
-    let simulatedUv = 0;
-    if (hour > 6 && hour < 20) {
-      const uvPhase = ((hour - 13) / 7) * (Math.PI / 2);
-      const peakUv = Math.max(baseUv, 6);
-      simulatedUv = Math.cos(uvPhase) * peakUv;
+    // Check hourly forecast to see if there's a closer match to the slider time
+    if (forecastData.hourly && Array.isArray(forecastData.hourly)) {
+      for (const hourData of forecastData.hourly) {
+        if (!hourData.dt) continue;
+        const diff = Math.abs(targetTimeSecs - hourData.dt);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestData = hourData;
+        }
+      }
     }
 
     setWeatherData((prev) => {
-      if (
-        !prev ||
-        Math.abs(prev.temp - simulatedTemp) > 0.1 ||
-        Math.abs(prev.uv - simulatedUv) > 0.1
-      ) {
-        return { temp: simulatedTemp, uv: Math.max(0, simulatedUv) };
+      const newTemp = closestData.temp;
+      const newUv = closestData.uvi ?? 0;
+      if (!prev || prev.temp !== newTemp || prev.uv !== newUv) {
+        return { temp: newTemp, uv: Math.max(0, newUv) };
       }
       return prev;
     });
