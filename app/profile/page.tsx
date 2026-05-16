@@ -61,7 +61,7 @@ export default function Profile() {
     router.push("/");
   };
 
-  // 获取用户信息
+  // user information
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -352,7 +352,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Saved Locations */}
+        {/* collect the location from api*/}
         <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
           Saved Locations
         </p>
@@ -395,7 +395,7 @@ export default function Profile() {
           ))
         )}
 
-        {/* set area */}
+        {/* user information - dyanamic infor from Supabase */}
         <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700">
           <div className="space-y-3">
             <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
@@ -445,6 +445,45 @@ export default function Profile() {
             <span>Sign Out</span>
           </button>
         </div>
+
+        {/* collect the location from api*/}
+        {/* <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
+          Saved Locations
+        </p> */}
+
+        {/* {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : favorites.length === 0 ? (
+          <div className="bg-gray-200 rounded-xl p-8 text-center text-gray-500 shadow">
+            <p>No saved locations yet</p>
+            <p className="text-sm mt-2">
+              Go to map and click ❤️ to save places you like!
+            </p>
+          </div>
+        ) : (
+          favorites.map((location) => (
+            <div
+              key={location.id}
+              className="bg-gray-300 rounded-xl border border-black text-black text-lg p-3 mb-3 flex justify-between items-center shadow"
+            >
+              <div className="flex-1">
+                <p className="font-semibold">{location.place_name}</p>
+                <p className="text-sm text-gray-700">
+                  {location.place_address || "Address not available"}
+                </p>
+                {location.place_rating && (
+                  <p className="text-sm">⭐ {location.place_rating} / 5</p>
+                )}
+              </div>
+              <button
+                onClick={() =>
+                  handleRemoveFavorite(location.place_id, location.place_name)
+                }
+                className="bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors"
+              ></button>
+            </div>
+          ))
+        )} */}
       </div>
       <Navbar />
     </main>
