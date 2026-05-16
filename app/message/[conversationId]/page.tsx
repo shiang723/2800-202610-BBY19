@@ -2,8 +2,9 @@
 
 import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
+import Image from "next/image";
 import { UserCircle, ArrowLeft } from "lucide-react";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useMemo } from "react";
 import { createClientForClientComponent } from "@/lib/supabase/client";
 
 type Message = {
@@ -13,21 +14,34 @@ type Message = {
   profile_id: number;
 };
 
+type SenderProfile = {
+  firstname: string;
+  lastname: string;
+  avatar_url: string | null;
+};
+
 type MessagePageProps = {
   params: Promise<{
     conversationId: string;
   }>;
 };
 
+const BOT_PROFILE_ID = Number(process.env.NEXT_PUBLIC_AI_BOT_PROFILE_ID);
+
 export default function MessagePage({ params }: MessagePageProps) {
-  const supabase = createClientForClientComponent();
+  const supabase = useMemo(() => createClientForClientComponent(), []);
 
   const { conversationId } = use(params);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [currentProfileId, setCurrentProfileId] = useState<number | null>(null);
+  const [isBotRoom, setIsBotRoom] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [botThinking, setBotThinking] = useState(false);
+  const [senderProfiles, setSenderProfiles] = useState<
+    Record<number, SenderProfile>
+  >({});
 
   useEffect(() => {
     async function loadMessages() {
@@ -56,6 +70,42 @@ export default function MessagePage({ params }: MessagePageProps) {
 
       setCurrentProfileId(profile.id);
 
+      const { data: roomMembers, error: roomMembersError } = await supabase
+        .from("chat_member")
+        .select(`
+          profile_id,
+          profile (
+            firstname,
+            lastname,
+            avatar_url
+          )
+        `)
+        .eq("room_id", conversationId);
+
+      if (roomMembersError) {
+        console.error("Could not load room members:", roomMembersError);
+      } else {
+        const profileMap: Record<number, SenderProfile> = {};
+
+        roomMembers?.forEach((member: any) => {
+          if (member.profile) {
+            profileMap[member.profile_id] = {
+              firstname: member.profile.firstname,
+              lastname: member.profile.lastname,
+              avatar_url: member.profile.avatar_url,
+            };
+          }
+        });
+
+        setSenderProfiles(profileMap);
+
+        const roomHasBot = roomMembers?.some(
+          (member: any) => member.profile_id === BOT_PROFILE_ID
+        );
+
+        setIsBotRoom(!!roomHasBot);
+      }
+
       const { data, error } = await supabase
         .from("message")
         .select("id, message_text, created_at, profile_id")
@@ -73,7 +123,7 @@ export default function MessagePage({ params }: MessagePageProps) {
     }
 
     loadMessages();
-  }, [conversationId]);
+  }, [conversationId, supabase]);
 
   useEffect(() => {
     const channel = supabase
@@ -100,6 +150,10 @@ export default function MessagePage({ params }: MessagePageProps) {
 
             return [...currentMessages, newMessage];
           });
+
+          if (newMessage.profile_id === BOT_PROFILE_ID) {
+            setBotThinking(false);
+          }
         }
       )
       .subscribe();
@@ -117,22 +171,75 @@ export default function MessagePage({ params }: MessagePageProps) {
     const messageText = inputText.trim();
     setInputText("");
 
-    const { error } = await supabase
-      .from("message")
-      .insert({
-        room_id: conversationId,
-        profile_id: currentProfileId,
-        message_text: messageText,
-      })
-      .select("id, message_text, created_at, profile_id")
-      .single();
+    const { error } = await supabase.from("message").insert({
+      room_id: conversationId,
+      profile_id: currentProfileId,
+      message_text: messageText,
+    });
 
     if (error) {
       console.error("Could not send message:", error);
       setInputText(messageText);
       return;
     }
+
+    if (isBotRoom) {
+      try {
+        setBotThinking(true);
+
+        const response = await fetch("/api/chatbot", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            roomId: conversationId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error("Chatbot API error:", errorData);
+          setBotThinking(false);
+        }
+      } catch (error) {
+        console.error("Could not contact chatbot:", error);
+        setBotThinking(false);
+      }
+    }
   };
+
+  function isBotProfile(profileId: number) {
+    return profileId === BOT_PROFILE_ID;
+  }
+
+  function renderAvatar(profileId: number) {
+    const senderProfile = senderProfiles[profileId];
+
+    if (senderProfile?.avatar_url) {
+      return (
+        <Image
+          src={senderProfile.avatar_url}
+          alt={`${senderProfile.firstname} ${senderProfile.lastname}`}
+          width={40}
+          height={40}
+          className="rounded-full object-cover shrink-0"
+        />
+      );
+    }
+
+    return <UserCircle size={40} className="text-gray-700" />;
+  }
+
+  function getSenderName(profileId: number) {
+    const senderProfile = senderProfiles[profileId];
+
+    if (!senderProfile) {
+      return "Unknown User";
+    }
+
+    return `${senderProfile.firstname} ${senderProfile.lastname}`;
+  }
 
   return (
     <main className="pt-5 bg-gray-100 min-h-screen flex flex-col">
@@ -166,29 +273,83 @@ export default function MessagePage({ params }: MessagePageProps) {
               return (
                 <div key={msg.id} className="w-full">
                   {!isMine ? (
-                    <div className="flex items-start gap-2 w-full">
-                      <Link href="#" className="shrink-0">
-                        <UserCircle size={40} className="text-gray-700" />
-                      </Link>
+                    <div className="w-full">
+                      <div className="ml-12 mb-1 flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-600">
+                          {getSenderName(msg.profile_id)}
+                        </span>
 
-                      <div className="bg-gray-200 px-4 py-2 rounded-xl border border-gray-300 max-w-[75%]">
-                        <p className="text-black">{msg.message_text}</p>
+                        {isBotProfile(msg.profile_id) && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                            BOT
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-start gap-2 w-full">
+                        <Link href="#" className="shrink-0">
+                          {renderAvatar(msg.profile_id)}
+                        </Link>
+
+                        <div className="bg-gray-200 px-4 py-2 rounded-xl border border-gray-300 max-w-[75%]">
+                          <p className="text-black whitespace-pre-line">
+                            {msg.message_text}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2 w-full justify-end">
-                      <div className="ml-auto bg-gray-200 px-4 py-2 rounded-xl border border-gray-300 max-w-[75%]">
-                        <p className="text-black">{msg.message_text}</p>
+                    <div className="w-full">
+                      <div className="mr-12 mb-1 flex items-center justify-end gap-2">
+                        <span className="text-xs font-semibold text-gray-600">
+                          {getSenderName(msg.profile_id)}
+                        </span>
+
+                        {isBotProfile(msg.profile_id) && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                            BOT
+                          </span>
+                        )}
                       </div>
 
-                      <Link href="#" className="shrink-0">
-                        <UserCircle size={40} className="text-gray-700" />
-                      </Link>
+                      <div className="flex items-start gap-2 w-full justify-end">
+                        <div className="ml-auto bg-gray-200 px-4 py-2 rounded-xl border border-gray-300 max-w-[75%]">
+                          <p className="text-black whitespace-pre-line">
+                            {msg.message_text}
+                          </p>
+                        </div>
+
+                        <Link href="#" className="shrink-0">
+                          {renderAvatar(msg.profile_id)}
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>
               );
             })
+          )}
+          
+          {botThinking && (
+            <div className="w-full">
+              <div className="ml-12 mb-1 flex items-center gap-2">
+                <span className="text-xs font-semibold text-gray-600">
+                  {getSenderName(BOT_PROFILE_ID)}
+                </span>
+
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                  BOT
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2 w-full">
+                {renderAvatar(BOT_PROFILE_ID)}
+
+                <div className="bg-gray-200 px-4 py-2 rounded-xl border border-gray-300 max-w-[75%]">
+                  <p className="text-gray-500">AI Assistant is typing...</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
