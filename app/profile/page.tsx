@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import WelcomeTutorial from "@/components/WelcomeTutorial";
 
 const supabase = createClientForClientComponent();
 
@@ -52,6 +53,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [friendsCount, setFriendsCount] = useState(0);
   const [editingBio, setEditingBio] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [bioText, setBioText] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +61,15 @@ export default function Profile() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
+  };
+
+  const handleOpenTutorial = async () => {
+    setTutorialOpen(true);
+  };
+
+  const handleCloseTutorial = () => {
+    setTutorialOpen(false);
+    console.log(tutorialOpen);
   };
 
   // user information
@@ -427,13 +438,17 @@ export default function Profile() {
             </div>
 
             <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md">
-              <button className="flex items-center gap-6">
+              <button
+                onClick={handleOpenTutorial}
+                className="flex items-center gap-6"
+              >
                 <HelpCircle size={24} className="mr-3" />
                 <p>Tutorial</p>
               </button>
             </div>
           </div>
         </div>
+        <WelcomeTutorial open={tutorialOpen} onClose={handleCloseTutorial} />
 
         {/* Sign Out */}
         <div className="mt-4 bg-white rounded-xl overflow-hidden shadow">

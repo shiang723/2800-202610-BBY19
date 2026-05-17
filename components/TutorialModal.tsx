@@ -17,6 +17,7 @@ interface TutorialModalProps {
   numSteps?: string;
   first?: boolean;
   last?: boolean;
+  onTutorialComplete?: () => void;
 }
 
 //Tutorial Modal used for Welcome Tutorial
@@ -33,18 +34,49 @@ export default function TutorialModal({
   numSteps = "1",
   first = false,
   last = false,
+  onTutorialComplete,
 }: TutorialModalProps) {
   // Create a reference for the current modal
   const currentModal = useRef<HTMLDialogElement>(null);
 
+  // Handler for closing the tutorial (skip or done)
+  function handleCloseTutorial() {
+    currentModal.current?.close();
+    if (onTutorialComplete) {
+      onTutorialComplete();
+    }
+  }
+
   // Handler for the Next or Done button on Click action.
   function handleNext() {
     currentModal.current?.close();
-    if (!last) {
+    //   if (!last) {
+    //     const nextModal = document.getElementById(
+    //       nextLocation,
+    //     ) as HTMLDialogElement | null;
+    //     nextModal?.showModal();
+    //   }
+
+    // }
+    if (last) {
+      if (onTutorialComplete) {
+        onTutorialComplete();
+      }
+    } else {
+      // Open next modal
       const nextModal = document.getElementById(
         nextLocation,
       ) as HTMLDialogElement | null;
       nextModal?.showModal();
+    }
+  }
+
+  // Handler for Skip button
+  function handleSkip() {
+    currentModal.current?.close();
+    // When skipping, close all and notify completion
+    if (onTutorialComplete) {
+      onTutorialComplete();
     }
   }
 
@@ -71,16 +103,13 @@ export default function TutorialModal({
       <dialog
         ref={currentModal}
         id={id}
-        className="rounded-xl p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto"
+        className="rounded-xl pt-6 p-5 fixed place-self-center max-w-90 max-h-9.9/10 flex-auto"
       >
-        <button
-          onClick={() => {
-            currentModal.current?.close();
-          }}
-          className={skipButtonClass}
-        >
-          Skip
-        </button>
+        {!first && (
+          <button onClick={handleSkip} className={skipButtonClass}>
+            Skip
+          </button>
+        )}
         <h2 className="text-center text-xl">{header}</h2>
         <Image
           src={icon}
