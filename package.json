@@ -11,7 +11,7 @@
   "dependencies": {
     "@maptiler/geocoding-control": "^3.0.0",
     "@supabase/ssr": "^0.10.2",
-    "@supabase/supabase-js": "^2.105.3",
+    "@supabase/supabase-js": "^2.105.4",
     "lucide-react": "^1.14.0",
     "mapbox-gl-shadow-simulator": "^0.68.2",
     "maplibre-gl": "^5.24.0",
