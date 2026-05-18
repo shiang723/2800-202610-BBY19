@@ -7,7 +7,7 @@ import { createClientForClientComponent } from "@/lib/supabase/client";
 import {
   ArrowLeft,
   LogOut,
-  Settings,
+  KeyRoundIcon,
   User,
   HelpCircle,
   Mail,
@@ -352,7 +352,10 @@ export default function Profile() {
           </div>
 
           {/* friend numbers */}
-          <div className="mt-4 pt-3 border-t border-gray-100">
+          <Link
+            href="/friends"
+            className="mt-4 pt-3 border-t border-gray-100 block hover:bg-gray-50 rounded-lg transition-colors"
+          >
             <div className="flex items-center justify-center gap-2 text-gray-600">
               <Users size={18} className="text-blue-500" />
               <span className="text-sm">
@@ -360,7 +363,7 @@ export default function Profile() {
                 Friends
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* collect the location from api*/}
@@ -409,14 +412,16 @@ export default function Profile() {
         {/* user information - dyanamic infor from Supabase */}
         <div className="bg-white rounded-xl p-4 mt-4 shadow text-gray-700">
           <div className="space-y-3">
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md pt-1 pb-1">
               <span className="font-semibold min-w-[60px]">
                 <Mail size={24} className="mr-3" />
               </span>
               <p>{user?.email || "Not logged in"}</p>
             </div>
 
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
+            <div className="border-b border-gray-200"></div>
+
+            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md pt-1 pb-1">
               <span className="font-semibold min-w-[60px]">
                 <User size={24} className="mr-3" />
               </span>
@@ -428,16 +433,19 @@ export default function Profile() {
               </p>
             </div>
 
-            <div className="flex items-center pb-3 border-b border-gray-200 transition-colors hover:bg-blue-100 rounded-md">
-              <Link href="/settings" className="flex items-center flex-1">
+            <div className="border-b border-gray-200"></div>
+
+            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md pt-1 pb-1">
+              <Link href="/reset-password" className="flex items-center flex-1">
                 <span className="font-semibold min-w-[60px]">
-                  <Settings size={24} className="mr-3" />
+                  <KeyRoundIcon size={24} className="mr-3" />
                 </span>
-                <p>Account Settings</p>
+                <p>Reset password</p>
               </Link>
             </div>
+            <div className="border-b border-gray-200"></div>
 
-            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md">
+            <div className="flex items-center transition-colors hover:bg-blue-100 rounded-md pt-1 pb-1">
               <button
                 onClick={handleOpenTutorial}
                 className="flex items-center gap-6"
@@ -460,45 +468,6 @@ export default function Profile() {
             <span>Sign Out</span>
           </button>
         </div>
-
-        {/* collect the location from api*/}
-        {/* <p className="text-lg font-semibold text-gray-800 m-2 mt-6">
-          Saved Locations
-        </p> */}
-
-        {/* {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading...</div>
-        ) : favorites.length === 0 ? (
-          <div className="bg-gray-200 rounded-xl p-8 text-center text-gray-500 shadow">
-            <p>No saved locations yet</p>
-            <p className="text-sm mt-2">
-              Go to map and click ❤️ to save places you like!
-            </p>
-          </div>
-        ) : (
-          favorites.map((location) => (
-            <div
-              key={location.id}
-              className="bg-gray-300 rounded-xl border border-black text-black text-lg p-3 mb-3 flex justify-between items-center shadow"
-            >
-              <div className="flex-1">
-                <p className="font-semibold">{location.place_name}</p>
-                <p className="text-sm text-gray-700">
-                  {location.place_address || "Address not available"}
-                </p>
-                {location.place_rating && (
-                  <p className="text-sm">⭐ {location.place_rating} / 5</p>
-                )}
-              </div>
-              <button
-                onClick={() =>
-                  handleRemoveFavorite(location.place_id, location.place_name)
-                }
-                className="bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors"
-              ></button>
-            </div>
-          ))
-        )} */}
       </div>
       <Navbar />
     </main>

@@ -9,10 +9,10 @@ import {
   Bookmark,
   Bell,
   MessageCircleCheckIcon,
+  Users,
 } from "lucide-react";
 
 export default function Navbar() {
-
   function handleMenuOpen() {
     const menuDialog = document.getElementById(
       "Navbar",
@@ -53,6 +53,7 @@ export default function Navbar() {
   const menuItems = [
     { href: "/", label: "Home", Icon: House },
     { href: "/chat", label: "Chat", Icon: MessageCircleCheckIcon },
+    { href: "/friends", label: "Friends", Icon: Users },
     { href: "/profile", label: "Profile", Icon: Bookmark },
     { href: "/notification", label: "Notification", Icon: Bell },
   ];

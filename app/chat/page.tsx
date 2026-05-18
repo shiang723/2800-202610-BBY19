@@ -4,14 +4,8 @@ import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
 import Image from "next/image";
-import { UserCircle, X } from "lucide-react";
-import {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import { UserCircle, X, Users, UserPlus } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createClientForClientComponent } from "@/lib/supabase/client";
 
 type ChatPreview = {
@@ -48,6 +42,8 @@ export default function Chat() {
   const [currentProfileId, setCurrentProfileId] = useState<number | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // add friend feature in the chatbox
+  const friendMenuRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(
     async (showLoading = false) => {
@@ -83,7 +79,8 @@ export default function Chat() {
 
       const { data, error } = await supabase
         .from("chat_member")
-        .select(`
+        .select(
+          `
           room_id,
           room (
             id,
@@ -104,7 +101,8 @@ export default function Chat() {
               )
             )
           )
-        `)
+        `,
+        )
         .eq("profile_id", profileId);
 
       if (error) {
@@ -123,13 +121,13 @@ export default function Chat() {
             }
 
             const otherMember = conversation.chat_member.find(
-              (member: any) => member.profile_id !== profileId
+              (member: any) => member.profile_id !== profileId,
             );
 
             const latestMessage = conversation.message?.sort(
               (a: any, b: any) =>
                 new Date(b.created_at + "Z").getTime() -
-                new Date(a.created_at + "Z").getTime()
+                new Date(a.created_at + "Z").getTime(),
             )[0];
 
             return {
@@ -146,13 +144,13 @@ export default function Chat() {
           .sort(
             (a: ChatPreview, b: ChatPreview) =>
               new Date(b.updated_at + "Z").getTime() -
-              new Date(a.updated_at + "Z").getTime()
+              new Date(a.updated_at + "Z").getTime(),
           ) ?? [];
 
       setChats(formattedChats as ChatPreview[]);
       setLoading(false);
     },
-    [supabase]
+    [supabase],
   );
 
   useEffect(() => {
@@ -188,10 +186,10 @@ export default function Chat() {
             return updatedChats.sort(
               (a, b) =>
                 new Date(b.updated_at + "Z").getTime() -
-                new Date(a.updated_at + "Z").getTime()
+                new Date(a.updated_at + "Z").getTime(),
             );
           });
-        }
+        },
       )
       .subscribe();
 
@@ -215,7 +213,7 @@ export default function Chat() {
         },
         () => {
           loadConversations(false);
-        }
+        },
       )
       .subscribe();
 
@@ -227,10 +225,10 @@ export default function Chat() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        friendMenuRef.current &&
+        !friendMenuRef.current.contains(event.target as Node)
       ) {
-        setOpen(false);
+        setShowFriendMenu(false);
       }
     };
 
@@ -246,6 +244,15 @@ export default function Chat() {
             <div className="flex items-center gap-2 w-full">
               <div className="flex-1 w-full" onClick={() => setOpen(!open)}>
                 <SearchBar />
+              </div>
+
+              <div className="flex gap-2">
+                <Link
+                  href="/friends"
+                  className="p-2 bg-blue-500 rounded-full shadow-md hover:bg-blue-600 transition-colors shrink-0"
+                >
+                  <UserPlus size={20} className="text-white" />
+                </Link>
               </div>
 
               {open && (
